@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="sv" data-base="../">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Case study: Viking Assistance — Flutter, betalningar, pushnotiser och produktionsapp.">
+  <title>Viking Assistance | Agnes Sandberg</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Istok+Web:wght@400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../style.css">
+  <script type="module" src="../javascript/main.js"></script>
+</head>
+<body data-page="project-viking" class="site-theme-figma">
+  <a class="visually-hidden" href="#main">Hoppa till innehåll</a>
+  <div data-component="site-header"></div>
+
+  <header class="project-hero">
+    <div class="page-wrap">
+      <p class="eyebrow"><a href="../projects.html">Projects</a> · Mobilapp</p>
+      <h1>Viking Assistance</h1>
+      <div class="project-hero__meta">
+        <span>Medlemskap, vägassistans & försäkring</span>
+        <span>Mobilutvecklare (Flutter)</span>
+        <span>okt 2025 – sept 2026</span>
+      </div>
+      <p class="lead">
+        Medlemsapp för Viking där användare beställer vägassistans, hanterar medlemskap och familj, följer ärenden
+        i realtid och når kundsupport — med betalningar och försäkringslogik i bakgrunden.
+      </p>
+      <div data-viking-tags></div>
+      <div data-viking-stores></div>
+    </div>
+  </header>
+
+  <div data-viking-subnav></div>
+
+  <main id="main">
+    <section id="overview" class="case-section">
+      <div class="page-wrap case-section__inner case-section__inner--split">
+        <div class="case-block">
+          <h2>Overview</h2>
+          <p>
+            Viking Assistance är den kundvända appen för Viking-medlemmar i Norden. Appen samlar medlemskap,
+            vägassistans, fordon, betalningar och support i ett flöde som ska fungera lika bra vid kallstart
+            som efter kontobyte på en delad enhet.
+          </p>
+          <p>
+            Min roll var att vidareutveckla och stabilisera centrala delar av Flutter-kodbasen: affärslogik kring
+            priser och betalningar, användarflöden i plånbok och familjehantering, samt plattformsspecifik
+            funktionalitet för pushnotiser, Intercom och release till App Store och Google Play.
+          </p>
+        </div>
+        <div class="case-block" data-viking-carousel></div>
+      </div>
+    </section>
+
+    <section id="contribution" class="case-section">
+      <div class="page-wrap">
+        <div class="case-block case-block--wide">
+          <h2>My contribution</h2>
+          <p class="muted">Utvalda ansvarsområden — inte en fullständig feature-lista.</p>
+          <div data-viking-highlights></div>
+
+          <h3>Betalningar och medlemskap</h3>
+          <p>
+            Jag arbetade med betalningsflöden där produkter, rabatter, fakturor och försäkringsperioder kan
+            kombineras på flera sätt. Det inkluderade beräkning av priser, hantering av familjemedlemmar och
+            förmånstagare, betalningsstatusar, krediteringar och regler för när användare får ändra produkter
+            eller avsluta medlemskap.
+          </p>
+
+          <h3>Användarflöden och UI</h3>
+          <p>
+            Jag vidareutvecklade produktöversikter, transaktionsdetaljer, familjehantering och verifiering av
+            personuppgifter — bland annat tidsbaserade kontroller som avgör när användaren behöver granska sina
+            kontaktuppgifter och ett flöde för att bekräfta eller uppdatera dem.
+          </p>
+
+          <h3>Plattform, kvalitet och release</h3>
+          <ul>
+            <li>Pushnotiser och navigation utifrån notifikationstyp, deep links och appens livscykel.</li>
+            <li>PDF-visning och nedladdning på iOS och Android.</li>
+            <li>Felsökning av Android-krascher kopplade till native-bibliotek och grafik.</li>
+            <li>iOS UIScene-migrering, Firebase Crashlytics och widgettester med mockade ViewModels.</li>
+            <li>Publicering via App Store Connect och Google Play Console.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section id="challenges" class="case-section">
+      <div class="page-wrap">
+        <div class="case-block case-block--wide">
+          <h2>Technical challenges</h2>
+          <p class="muted">Progressiv fördjupning — två områden där komplexiteten var särskilt hög.</p>
+
+          <h3>1. Pushnotiser, Intercom och sessionsäkerhet</h3>
+          <p>
+            Appen tog emot notiser från både Vikings backend och Intercom. På iOS och Android uppstod problem vid
+            kallstart, när Flutter ännu inte var redo, och när Intercom öppnades utan korrekt activity stack på
+            Android. En extra säkerhetsdimension var att notiser kunde levereras efter utloggning — till exempel på
+            en lånad telefon — vilket krävde kontroll mot aktuell användare och organisation innan navigation.
+          </p>
+          <p><strong>Lösning i korthet:</strong></p>
+          <ul>
+            <li>Central koordinator för notistryck, autentisering och livscykel.</li>
+            <li>Exklusiv Intercom-kö för sekventiella SDK-anrop mot delat sessionstillstånd.</li>
+            <li>Native Swift-kö för APNs tills Dart är redo; Kotlin TaskStackBuilder för Intercom på Android.</li>
+            <li>Tillståndsmaskin för väntande notisåtgärder med omvalidering precis före navigation.</li>
+          </ul>
+
+          <p>Swift: separera mottagning från hantering tills Flutter är redo.</p>
+          <pre><code>func enqueueOrForward(
+  userInfo: [AnyHashable: Any],
+  trustedIntercomPush: Bool? = nil
+) {
+  precondition(Thread.isMainThread)
+  let tap = PendingTap(
+    userInfo: userInfo,
+    trustedIntercomPush: trustedIntercomPush
+  )
+  if isDartHandlerReady, canDeliver {
+    forward(tap)
+  } else {
+    pending.append(tap)
+  }
+}</code></pre>
+
+          <p>Dart: validera att notisen fortfarande matchar inloggad kontext innan commit.</p>
+          <pre><code>bool _isVikingCommitStillValid(PendingNotificationAction action) {
+  if (action.phase == NotificationActionPhase.cancelled) return false;
+  if (_pending?.id != action.id) return false;
+  if (_lifecycleReader() != AppLifecycleState.resumed) return false;
+  if (action.requiresAuthentication && !_users.isLoggedIn) return false;
+  final notification = action.notification;
+  return notification is! VikingPushNotification ||
+      _notificationMatchesCurrentContext(notification);
+}</code></pre>
+
+          <h3>2. Fragmenterad pris- och betalningslogik</h3>
+          <p>
+            Prisberäkningar hade vuxit ut i flera views, view models och utility-funktioner. Olika delar av appen
+            kunde tillämpa olika regler för rabatter, perioder och historiska betalningar — svårt att felsöka och
+            riskabelt vid vidareutveckling (inklusive AI-assisterad refaktorering där “var sanningen bor” måste vara
+            tydlig).
+          </p>
+          <p><strong>Lösning i korthet:</strong></p>
+          <ul>
+            <li><code>ProductPriceResolver</code> med explicit prioriteringsordning för priskällor.</li>
+            <li>UI-oberoende <code>PriceBreakdown</code> och <code>PaymentSummary</code> för konsekvent presentation.</li>
+            <li><code>TemplateVersionResolver</code> för förnyelser kopplade till rätt faktureringsperiod.</li>
+            <li>Enhetstester mot beräkningskärnan utan att bygga hela ViewModels.</li>
+          </ul>
+
+          <p>Prioriteringslogik — faktureringsspecifikation före periodpris:</p>
+          <pre><code>if (spec != null) {
+  final Decimal effective = spec.amount;
+  final Decimal regular = cost?.price ?? effective;
+  return PriceBreakdown(
+    regularPrice: regular,
+    effectivePrice: effective,
+    source: PriceSource.billedSpec,
+    /* … */
+  );
+}
+if (billablePeriodPrice != null) {
+  final Decimal regular = billablePeriodPrice;
+  final Decimal effective = _applyDiscount(/* … */);
+  return PriceBreakdown(
+    regularPrice: regular,
+    effectivePrice: effective,
+    source: PriceSource.billablePeriod,
+    /* … */
+  );
+}</code></pre>
+        </div>
+      </div>
+    </section>
+
+    <section id="architecture" class="case-section">
+      <div class="page-wrap">
+        <div class="case-block case-block--wide">
+          <h2>Architecture & implementation</h2>
+          <p>
+            Kodbasen följer i huvudsak MVVM i Flutter med tydligare domänlager där affärsregler flyttats närmare
+            testbara modeller och resolvers. Plattformsintegrationer (push, Intercom, PDF) nås via services och
+            method channels med tydliga gränser mot UI.
+          </p>
+
+          <div class="info-grid" style="margin-top: var(--space-xl);">
+            <div class="info-panel">
+              <h3>Domän & presentation</h3>
+              <ul>
+                <li>Single source of truth för pris via resolver + value objects.</li>
+                <li>Backend-ägda saldon respekteras — klienten räknar inte om auktoritativa belopp.</li>
+                <li>Historiska kvitton filtrerar barnprodukter via betalningsspecifikation, inte dagens familjestatus.</li>
+              </ul>
+            </div>
+            <div class="info-panel">
+              <h3>Asynkron koordinering</h3>
+              <ul>
+                <li>Intercom: exklusiv kö, timeout och generationsbaserad invalidering.</li>
+                <li>Notiser: faser från <code>queued</code> till <code>executing</code> / <code>cancelled</code>.</li>
+                <li>Crashlytics och diagnostik för produktionsincidenter.</li>
+              </ul>
+            </div>
+          </div>
+
+          <h3>Utvecklingsflöde</h3>
+          <p>
+            Jag tog även fram strukturerade Cursor-workflows för testning och release-verifiering: impact-analys av
+            ändringar, regressionsskydd i tester, tydliga grindar vid oklar affärslogik och read-only-checklista
+            inför distribution — utan att automatisera bort manuellt ansvar vid release.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section id="results" class="case-section">
+      <div class="page-wrap">
+        <div class="case-block case-block--wide">
+          <h2>Results & learnings</h2>
+          <ul>
+            <li>
+              <strong>Konsekventare prispresentation</strong> i migrerade betalningsflöden, med enklare felsökning
+              och tydligare plats för nya affärsregler.
+            </li>
+            <li>
+              <strong>Stabilare notis- och supportupplevelse</strong> på iOS och Android, inklusive säkrare beteende
+              vid kontobyte och asynkron navigation.
+            </li>
+            <li>
+              <strong>Bättre underlag för kvalitet</strong> genom widgettester, Crashlytics och tydligare domängränser
+              som också underlättar AI-assisterad utveckling utan att sprida logik i UI.
+            </li>
+          </ul>
+
+          <p class="muted" style="margin-top: var(--space-xl);">
+            Appen är publicerad och under fortsatt utveckling av Viking. Länkar ovan går till App Store och Google Play.
+          </p>
+
+          <div class="hero-actions">
+            <a class="btn btn--ghost" href="../projects.html">← Alla projekt</a>
+            <a class="btn btn--primary" href="../contact.html">Kontakt</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div data-component="site-footer"></div>
+</body>
+</html>

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="sv" data-base="./">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="About Agnes Sandberg — mobile app developer.">
+  <title>About | Agnes Sandberg</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Istok+Web:wght@400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <script type="module" src="javascript/main.js"></script>
+</head>
+<body data-page="about" class="site-theme-figma">
+  <a class="visually-hidden" href="#main">Skip to content</a>
+  <div data-component="site-header"></div>
+
+  <main id="main" class="page-main page-main--about">
+    <div class="page-wrap about-stack">
+      <div class="about-intro">
+        <img class="about-intro__photo" data-about-profile-image src="" alt="Agnes Sandberg" width="229" height="250" loading="eager">
+        <div class="about-intro__bio" data-about-bio></div>
+      </div>
+
+      <section class="about-section about-section--contact" aria-labelledby="about-contact-heading">
+        <h2 class="section-label" id="about-contact-heading" data-about-contact-heading>Contact</h2>
+        <div data-about-contact></div>
+      </section>
+
+      <section class="about-section about-section--skills" aria-labelledby="about-skills-heading">
+        <h2 class="section-label" id="about-skills-heading" data-about-skills-heading>Programming experience</h2>
+        <div data-about-skills></div>
+      </section>
+
+      <section class="about-section about-section--tools" aria-labelledby="about-tools-heading">
+        <h2 class="section-label" id="about-tools-heading" data-about-tools-heading>Tools</h2>
+        <div data-about-tools></div>
+      </section>
+    </div>
+  </main>
+
+  <div data-component="site-footer"></div>
+</body>
+</html>

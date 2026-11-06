@@ -1,0 +1,8 @@
+.DS_Store
+.env
+.env.*
+*.log
+.cursor/
+
+# Too large for GitHub (>100 MB); keep locally only
+assets/projects/vanbruun/movies/vanbruun_in_app_recording.mov
