@@ -149,10 +149,9 @@ export function renderProjectPanel(project, base, locale = getLocale()) {
       <div class="project-panel__body">
         <header class="project-panel__head">
           <div class="project-panel__identity">
-            <img class="project-panel__logo" src="${resolveAssetPath(base, project.logo)}" alt="" width="48" height="48" loading="lazy">
+            <img class="project-panel__logo" src="${resolveAssetPath(base, project.logo)}" alt="" width="45" height="45" loading="lazy">
             <div class="project-panel__titles">
               <h2 class="project-panel__title">${escapeHtml(project.name)}</h2>
-              <p class="project-panel__role">${escapeHtml(roleType)}</p>
             </div>
           </div>
           <p class="project-panel__period">${escapeHtml(project.period)}</p>
@@ -163,6 +162,7 @@ export function renderProjectPanel(project, base, locale = getLocale()) {
           </div>
           ${renderStoreBadges(project, base)}
         </div>
+        <p class="project-panel__role">${escapeHtml(roleType)}</p>
         ${hasTags ? `<div class="project-panel__tags">${tagsHtml}</div>` : ""}
         <div class="project-panel__copy">
           <div class="project-panel__text-block">

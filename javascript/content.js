@@ -181,12 +181,12 @@ export const PROJECTS = [
     },
     bullets: {
       sv: [
-        "Local-first-arkitektur med outbox och atomiska transaktioner.",
+        "Server-first-arkitektur med outbox och atomiska transaktioner.",
         "Design och implementation av synkronisering mot Supabase.",
         "Datamodellering för produkter, varumärken och importflöden.",
       ],
       en: [
-        "Local-first architecture with outbox and atomic transactions.",
+        "Server-first architecture with outbox and atomic transactions.",
         "Designed and implemented Supabase synchronisation.",
         "Data modelling for products, brands, and import flows.",
       ],

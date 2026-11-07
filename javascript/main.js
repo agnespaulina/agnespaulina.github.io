@@ -42,7 +42,11 @@ function initLanguageSwitch() {
   document.querySelectorAll("[data-lang-switch]").forEach((root) => {
     root.querySelectorAll("[data-lang]").forEach((btn) => {
       btn.addEventListener("click", () => {
-        setLocale(btn.dataset.lang);
+        const next = btn.dataset.lang;
+        setLocale(next);
+        root.querySelectorAll("[data-lang]").forEach((peer) => {
+          peer.classList.toggle("is-active", peer.dataset.lang === next);
+        });
         refreshContent();
       });
     });

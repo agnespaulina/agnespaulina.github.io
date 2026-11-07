@@ -76,7 +76,7 @@ function renderFigmaChrome() {
   const lastName = restName.join(" ");
 
   return `
-    <header class="site-chrome site-chrome--figma">
+    <header class="site-chrome site-chrome--figma" data-component="site-header">
       <div class="site-chrome__band">
         <div class="page-wrap site-chrome__top site-chrome__top--figma">
           <div class="site-brand site-brand--figma">
@@ -111,7 +111,7 @@ function renderDefaultChrome() {
   const title = pickLocalized(SITE.title, locale);
 
   return `
-    <header class="site-chrome">
+    <header class="site-chrome" data-component="site-header">
       <div class="page-wrap site-chrome__top">
         <div class="site-brand">
           <a class="site-brand__link" href="${resolveHref("about.html")}">
@@ -146,7 +146,7 @@ function renderSiteFooter() {
   const showLangInFooter = !document.body?.classList?.contains("site-theme-figma");
 
   return `
-    <footer class="site-footer">
+    <footer class="site-footer" data-component="site-footer">
       <div class="page-wrap site-footer__inner">
         <p class="site-footer__copy">© ${year} ${escapeHtml(SITE.name)}. ${escapeHtml(rights)}</p>
         ${showLangInFooter ? renderLangSwitch(base, locale) : ""}
