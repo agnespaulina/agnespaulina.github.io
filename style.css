@@ -989,24 +989,91 @@ body.site-theme-figma .project-panel {
 }
 
 body.site-theme-figma .project-panel__body {
+  display: grid;
   gap: 0;
+  /* Mobile (Figma 1116:2197): head → screenshot → tags → description */
+  grid-template-columns: 1fr;
+  grid-template-rows: auto auto auto auto;
 }
 
-@media (min-width: 900px) {
-  body.site-theme-figma .project-panel__body {
-    /* Figma: ~963px text + ~406px preview @ 1369px card width */
-    grid-template-columns: minmax(18.75rem, 1fr) minmax(15rem, 25.375rem);
-    align-items: stretch;
-  }
+body.site-theme-figma .project-panel__head {
+  grid-column: 1;
+  grid-row: 1;
+  background: #fff;
+  padding: 1rem 1rem 0;
+}
+
+body.site-theme-figma .project-panel__visual {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+body.site-theme-figma .project-panel__tags {
+  grid-column: 1;
+  grid-row: 3;
+  background: #fff;
+  padding: 0 1rem 1rem;
 }
 
 body.site-theme-figma .project-panel__copy {
+  grid-column: 1;
+  grid-row: 4;
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
   background: #fff;
-  padding: 1rem 1rem 1.6875rem;
+  padding: 0 1rem 1.6875rem;
   min-width: 0;
+}
+
+body.site-theme-figma .project-panel--no-tags .project-panel__visual {
+  grid-row: 2;
+}
+
+body.site-theme-figma .project-panel--no-tags .project-panel__copy {
+  grid-row: 3;
+}
+
+@media (min-width: 900px) {
+  body.site-theme-figma .project-panel__body {
+    /* Desktop: left column = head, tags, copy; right = full-height preview */
+    grid-template-columns: minmax(18.75rem, 1fr) minmax(15rem, 25.375rem);
+    grid-template-rows: auto auto minmax(0, 1fr);
+    align-items: stretch;
+  }
+
+  body.site-theme-figma .project-panel__head {
+    grid-column: 1;
+    grid-row: 1;
+    padding: 1rem 1rem 0;
+  }
+
+  body.site-theme-figma .project-panel__tags {
+    grid-column: 1;
+    grid-row: 2;
+    padding: 0 1rem 1rem;
+  }
+
+  body.site-theme-figma .project-panel__copy {
+    grid-column: 1;
+    grid-row: 3;
+    align-self: stretch;
+    padding: 0 1rem 1.6875rem;
+  }
+
+  body.site-theme-figma .project-panel__visual {
+    grid-column: 2;
+    grid-row: 1 / -1;
+    align-self: stretch;
+  }
+
+  body.site-theme-figma .project-panel--no-tags .project-panel__copy {
+    grid-row: 2 / -1;
+  }
+
+  body.site-theme-figma .project-panel--no-tags .project-panel__visual {
+    grid-row: 1 / -1;
+  }
 }
 
 body.site-theme-figma .project-panel__head {
@@ -1019,6 +1086,7 @@ body.site-theme-figma .project-panel__head {
 }
 
 body.site-theme-figma .project-panel__identity {
+  display: flex;
   align-items: flex-start;
   gap: 0.75rem;
 }

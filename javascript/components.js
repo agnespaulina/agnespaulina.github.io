@@ -140,32 +140,36 @@ export function renderProjectPanel(project, base, locale = getLocale()) {
     ? `<p class="project-panel__case"><a href="${caseHref}">${locale === "sv" ? "Case study" : "Case study"} →</a></p>`
     : "";
 
+  const tagsHtml = renderTags(project.tags, "tag-list tag-list--project");
+  const hasTags = Boolean(tagsHtml);
+  const panelMods = hasTags ? "" : " project-panel--no-tags";
+
   return `
-    <article class="project-panel" data-project="${escapeHtml(project.slug)}">
+    <article class="project-panel${panelMods}" data-project="${escapeHtml(project.slug)}">
       <div class="project-panel__body">
-        <div class="project-panel__copy">
-          <header class="project-panel__head">
-            <div class="project-panel__identity">
-              <img class="project-panel__logo" src="${resolveAssetPath(base, project.logo)}" alt="" width="48" height="48" loading="lazy">
-              <div class="project-panel__titles">
-                <h2 class="project-panel__title">${escapeHtml(project.name)}</h2>
-                <p class="project-panel__role">${escapeHtml(roleType)}</p>
-              </div>
+        <header class="project-panel__head">
+          <div class="project-panel__identity">
+            <img class="project-panel__logo" src="${resolveAssetPath(base, project.logo)}" alt="" width="48" height="48" loading="lazy">
+            <div class="project-panel__titles">
+              <h2 class="project-panel__title">${escapeHtml(project.name)}</h2>
+              <p class="project-panel__role">${escapeHtml(roleType)}</p>
             </div>
-            <p class="project-panel__period">${escapeHtml(project.period)}</p>
-          </header>
-          ${renderTags(project.tags, "tag-list tag-list--project")}
-          <div class="project-panel__text-block">
-            <p class="project-panel__description">${escapeHtml(description)}</p>
-            ${bulletHtml}
           </div>
-          ${caseLink}
-        </div>
+          <p class="project-panel__period">${escapeHtml(project.period)}</p>
+        </header>
         <div class="project-panel__visual">
           <div class="project-panel__screenshot-wrap">
             <img class="project-panel__screenshot" src="${escapeHtml(screenshotSrc)}" ${screenshotSrcset ? `srcset="${screenshotSrcset}" sizes="(max-width: 899px) 100vw, min(22.375rem, 90vw)"` : ""} alt="${escapeHtml(project.name)} screenshots" width="358" height="277" loading="lazy" decoding="async">
           </div>
           ${renderStoreBadges(project, base)}
+        </div>
+        ${hasTags ? `<div class="project-panel__tags">${tagsHtml}</div>` : ""}
+        <div class="project-panel__copy">
+          <div class="project-panel__text-block">
+            <p class="project-panel__description">${escapeHtml(description)}</p>
+            ${bulletHtml}
+          </div>
+          ${caseLink}
         </div>
       </div>
     </article>`;
