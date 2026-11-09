@@ -1,5 +1,5 @@
 import { resolveAssetPath } from "./assets.js";
-import { CASE_STUDY_SUBNAV, ICONS, SITE, UI } from "./content.js";
+import { ICONS, SITE, UI } from "./content.js";
 import { getLocale, pickLocalized, pickLocalizedList } from "./i18n.js";
 
 function escapeHtml(text) {
@@ -19,21 +19,10 @@ function langSwitchButton(locale, lang, labels) {
 }
 
 /**
- * Shared language toggle. Figma-header uses CSS to switch full/abbr labels
- * at the same breakpoint as web-page-header (no separate markup per page).
+ * Language toggle. CSS switches full/abbr labels at the header breakpoint.
  */
-export function renderLangSwitch(base, locale, variant = "figma") {
+export function renderLangSwitch(locale) {
   const aria = pickLocalized(UI.langSwitchAria, locale);
-  if (variant !== "figma") {
-    const labels = { en: "En", sv: "Sv" };
-    return `
-    <div class="lang-switch" data-lang-switch role="group" aria-label="${escapeHtml(aria)}">
-      <button type="button" class="lang-switch__btn${locale === "en" ? " is-active" : ""}" data-lang="en">${labels.en}</button>
-      <span class="lang-switch__sep">/</span>
-      <button type="button" class="lang-switch__btn${locale === "sv" ? " is-active" : ""}" data-lang="sv">${labels.sv}</button>
-    </div>`;
-  }
-
   return `
     <div class="lang-switch lang-switch--figma" data-lang-switch role="group" aria-label="${escapeHtml(aria)}">
       ${langSwitchButton(locale, "sv", SITE.lang.sv)}
@@ -101,7 +90,7 @@ export function renderWebPageHeader({ base, locale, active, resolveHref }) {
               ${renderHeaderTabs(active, locale, resolveHref)}
             </nav>
             <div class="web-page-header__trailing">
-              ${renderLangSwitch(base, locale, "figma")}
+              ${renderLangSwitch(locale)}
             </div>
           </div>
         </div>
@@ -164,10 +153,6 @@ export function renderProjectPanel(project, base, locale = getLocale()) {
     ? rawDescription
     : [rawDescription];
   const bullets = pickLocalizedList(project.bullets, locale);
-  const caseHref =
-    project.caseStudy?.href && project.caseStudy.linkVisible !== false
-      ? `${base}${project.caseStudy.href}`
-      : null;
   const tagsHtml = renderTags(project.tags, "tag-list tag-list--project", locale);
 
   return `
@@ -188,7 +173,6 @@ export function renderProjectPanel(project, base, locale = getLocale()) {
       <div class="project-card__copy">
         ${paragraphs.map((t) => `<p>${escapeHtml(t)}</p>`).join("")}
         ${bullets.length ? `<ul class="project-card__bullets">${bullets.map((b) => `<li>${escapeHtml(b)}</li>`).join("")}</ul>` : ""}
-        ${caseHref ? `<a class="project-card__case" href="${caseHref}">${escapeHtml(pickLocalized(UI.caseStudyLink, locale))} →</a>` : ""}
       </div>
     </article>`;
 }
@@ -209,77 +193,4 @@ export function renderCvCompetencyCards(areas, base, locale = getLocale()) {
       </article>`;
     })
     .join("");
-}
-
-export function renderHighlights(items) {
-  if (!items?.length) return "";
-  const lis = items.map((item) => `<li>${escapeHtml(item)}</li>`).join("");
-  return `<ul class="highlight-list">${lis}</ul>`;
-}
-
-export function renderCarousel(
-  images,
-  base,
-  carouselId = "project-carousel",
-  locale = getLocale(),
-) {
-  const slides = images ?? [];
-  if (!slides.length) {
-    return `<p class="muted">${locale === "sv" ? "Bilder kommer snart." : "Images coming soon."}</p>`;
-  }
-
-  const slideWord = pickLocalized(UI.carouselSlideLabel, locale);
-
-  const slideHtml = slides
-    .map(
-      (img, index) => `
-      <figure class="carousel__slide${index === 0 ? " is-active" : ""}" data-index="${index}">
-        <img src="${resolveAssetPath(base, img.src)}" alt="${escapeHtml(img.alt)}" loading="${index === 0 ? "eager" : "lazy"}">
-      </figure>`,
-    )
-    .join("");
-
-  const dots = slides
-    .map(
-      (_, index) =>
-        `<button type="button" class="carousel__dot${index === 0 ? " is-active" : ""}" data-carousel-target="${carouselId}" data-index="${index}" aria-label="${escapeHtml(slideWord)} ${index + 1}"></button>`,
-    )
-    .join("");
-
-  const prev = escapeHtml(pickLocalized(UI.carouselPrev, locale));
-  const next = escapeHtml(pickLocalized(UI.carouselNext, locale));
-
-  return `
-    <div class="carousel" id="${carouselId}" data-carousel>
-      <div class="carousel__viewport">${slideHtml}</div>
-      ${
-        slides.length > 1
-          ? `<div class="carousel__controls">
-        <button type="button" class="carousel__btn carousel__btn--prev" data-carousel-target="${carouselId}" aria-label="${prev}">‹</button>
-        <div class="carousel__dots">${dots}</div>
-        <button type="button" class="carousel__btn carousel__btn--next" data-carousel-target="${carouselId}" aria-label="${next}">›</button>
-      </div>`
-          : ""
-      }
-    </div>`;
-}
-
-export function renderProjectSubnav(sectionIds, locale = getLocale()) {
-  const items = CASE_STUDY_SUBNAV.filter(
-    (item) => !sectionIds || sectionIds.includes(item.id),
-  );
-
-  const links = items
-    .map(
-      (item) =>
-        `<a class="project-subnav__link" href="#${item.id}" data-subnav-link="${item.id}">${escapeHtml(pickLocalized(item.label, locale))}</a>`,
-    )
-    .join("");
-
-  const subnavAria = escapeHtml(pickLocalized(UI.projectSubnavAria, locale));
-
-  return `
-    <nav class="project-subnav" aria-label="${subnavAria}" data-project-subnav>
-      <div class="page-wrap project-subnav__inner">${links}</div>
-    </nav>`;
 }
