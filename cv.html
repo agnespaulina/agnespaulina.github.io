@@ -12,7 +12,7 @@
   <title>CV | Agnes Sandberg</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Istok+Web:wght@400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Istok+Web:wght@400&family=Google+Sans+Flex:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
   <script type="module" src="javascript/main.js"></script>
 </head>
@@ -21,27 +21,26 @@
   <div data-component="site-header"></div>
 
   <main id="main" class="page-main">
-    <div class="page-wrap cv-layout">
-      <section class="cv-areas" aria-labelledby="cv-areas-heading">
-        <h2 class="cv-section__heading section-label" id="cv-areas-heading" data-cv-areas-heading>Mina kompetensområden</h2>
-        <div class="cv-areas__grid" data-cv-areas-grid></div>
-      </section>
-
+    <div class="page-wrap cv-page">
       <section class="cv-resume" aria-labelledby="cv-resume-heading">
-        <div class="cv-resume__copy">
-          <h2 class="cv-section__heading section-label" id="cv-resume-heading" data-cv-resume-heading>Mitt CV</h2>
-          <p class="cv-resume__intro" data-cv-resume-intro></p>
-        </div>
+        <h2 class="section-heading" id="cv-resume-heading" data-cv-resume-heading>Mitt CV</h2>
         <button type="button" class="cv-resume__thumbnail" data-cv-thumbnail>
           <span class="cv-resume__thumbnail-frame" data-cv-thumbnail-mount></span>
         </button>
-        <a class="btn btn--download cv-resume__download" data-cv-download href="#" download>
-          <img class="btn--download__icon" data-cv-download-icon src="assets/icons/icon_download.svg" alt="" width="24" height="24" decoding="async">
-          <span class="btn--download__label" data-cv-download-label>Ladda ner CV</span>
+        <a class="btn btn--solid cv-resume__download" data-cv-download href="#" download>
+          <img class="btn__icon" data-cv-download-icon src="assets/icons/icon_download.svg" alt="" width="24" height="24" decoding="async">
+          <span data-cv-download-label>Ladda ner PDF</span>
         </a>
+      </section>
+
+      <section class="cv-areas" aria-labelledby="cv-areas-heading">
+        <h2 class="section-heading" id="cv-areas-heading" data-cv-areas-heading>Tech stack</h2>
+        <div class="cv-areas__grid" data-cv-areas-grid></div>
       </section>
     </div>
   </main>
+
+  <div data-component="site-footer"></div>
 
   <div class="cv-overlay" data-cv-overlay hidden aria-hidden="true">
     <div class="cv-overlay__backdrop" data-cv-overlay-backdrop></div>
@@ -55,7 +54,10 @@
       <header class="cv-overlay__header">
         <h2 class="cv-overlay__title" id="cv-overlay-title" data-cv-overlay-title>Mitt CV</h2>
         <div class="cv-overlay__toolbar">
-          <a class="btn btn--download cv-overlay__download" data-cv-overlay-download href="#" download>Ladda ner CV</a>
+          <a class="btn btn--solid cv-overlay__download" data-cv-overlay-download data-cv-download href="#" download>
+            <img class="btn__icon" src="assets/icons/icon_download.svg" alt="" width="24" height="24" decoding="async">
+            <span data-cv-download-label>Ladda ner PDF</span>
+          </a>
           <button type="button" class="cv-overlay__close" data-cv-overlay-close aria-label="Stäng">
             <span aria-hidden="true">&times;</span>
           </button>

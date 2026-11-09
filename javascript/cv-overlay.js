@@ -72,7 +72,6 @@ function updateOverlayCopy(locale) {
     close.setAttribute("aria-label", pickLocalized(CV.overlayCloseAria, locale));
   }
   if (download) {
-    download.textContent = pickLocalized(CV.downloadLabel, locale);
     download.href = resolved;
     download.setAttribute("download", "");
     download.setAttribute("aria-label", pickLocalized(CV.downloadLabel, locale));

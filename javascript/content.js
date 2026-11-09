@@ -69,7 +69,10 @@ export const ABOUT = {
       "Beyond implementation I have experience in early product work: requirements analysis, user flows, prototypes, and collaboration with design and stakeholders. The goal is always something robust in production and straightforward for the team to extend.",
     ],
   },
+  bioHeading: { sv: "Vem är jag", en: "Who am I" },
   contactHeading: { sv: "Kontakt", en: "Contact" },
+  // `skills` and `tools` are not shown in the current About layout (photo, bio,
+  // contact). They are kept here so they can be brought back without retyping.
   skillsHeading: {
     sv: "Programmeringserfarenhet",
     en: "Programming experience",
@@ -197,14 +200,14 @@ export const CASE_STUDY_SUBNAV = [
 ];
 
 export const CV = {
-  areasHeading: { sv: "Mina kompetensområden", en: "My competency areas" },
+  areasHeading: { sv: "Tech stack", en: "Tech stack" },
   resumeHeading: { sv: "Mitt CV", en: "My CV" },
   resumeIntro: {
     sv: "Vill du veta mer om min erfarenhet? Här hittar du mitt fullständiga CV med arbetslivserfarenhet, projekt, utbildning och tekniska kompetenser.",
     en: "Want to know more about my experience? Here you’ll find my full CV with work history, projects, education, and technical skills.",
   },
   viewCvLabel: { sv: "Visa CV", en: "View CV" },
-  downloadLabel: { sv: "Ladda ner CV", en: "Download CV" },
+  downloadLabel: { sv: "Ladda ner PDF", en: "Download PDF" },
   overlayCloseAria: { sv: "Stäng CV-förhandsvisning", en: "Close CV preview" },
   pdfLoading: { sv: "Laddar CV…", en: "Loading CV…" },
   pdfError: {
@@ -212,7 +215,19 @@ export const CV = {
     en: "Could not display the CV in the browser.",
   },
   openPdfInTab: { sv: "Öppna PDF i ny flik", en: "Open PDF in a new tab" },
+  /** Cards under "Tech stack" (order = order on the page). */
   competencyAreas: [
+    {
+      icon: "assets/svg/data_integrity_and_synchronization.svg",
+      title: {
+        sv: "Dataintegritet och synkronisering",
+        en: "Data integrity & synchronisation",
+      },
+      description: {
+        sv: "Arbetar med lokal datalagring, databastransaktioner och synkroniseringsflöden för tillförlitlig datahantering även vid instabil uppkoppling.",
+        en: "Works with local storage, database transactions, and sync flows for reliable data handling even on unstable connections.",
+      },
+    },
     {
       icon: "assets/svg/system_architecture.svg",
       title: {
@@ -225,25 +240,14 @@ export const CV = {
       },
     },
     {
-      icon: "assets/svg/platform_specific_development.svg",
+      icon: "assets/svg/product_development_and_ux.svg",
       title: {
-        sv: "Plattformsspecifik utveckling",
-        en: "Platform-specific development",
+        sv: "Produktutveckling och UX",
+        en: "Product development & UX",
       },
       description: {
-        sv: "Utvecklar för iOS och Android med fokus på native-integrationer, pushnotiser, bakgrundsprocesser och konsekvent beteende mellan plattformarna.",
-        en: "Builds for iOS and Android with a focus on native integrations, push notifications, background work, and consistent behaviour across platforms.",
-      },
-    },
-    {
-      icon: "assets/svg/data_integrity_and_synchronization.svg",
-      title: {
-        sv: "Dataintegritet och synkronisering",
-        en: "Data integrity & synchronisation",
-      },
-      description: {
-        sv: "Arbetar med lokal datalagring, databastransaktioner och synkroniseringsflöden för tillförlitlig datahantering även vid instabil uppkoppling.",
-        en: "Works with local storage, database transactions, and sync flows for reliable data handling even on unstable connections.",
+        sv: "Kombinerar teknisk utveckling med erfarenhet av kravanalys, prototyper, användartester och användarcentrerad design.",
+        en: "Combines engineering with requirements analysis, prototyping, user testing, and user-centred design.",
       },
     },
     {
@@ -258,20 +262,25 @@ export const CV = {
       },
     },
     {
-      icon: "assets/svg/product_development_and_ux.svg",
+      icon: "assets/svg/platform_specific_development.svg",
       title: {
-        sv: "Produktutveckling och UX",
-        en: "Product development & UX",
+        sv: "Plattformsspecifik utveckling",
+        en: "Platform-specific development",
       },
       description: {
-        sv: "Kombinerar teknisk utveckling med erfarenhet av kravanalys, prototyper, användartester och användarcentrerad design.",
-        en: "Combines engineering with requirements analysis, prototyping, user testing, and user-centred design.",
+        sv: "Utvecklar för iOS och Android med fokus på native-integrationer, pushnotiser, bakgrundsprocesser och konsekvent beteende mellan plattformarna.",
+        en: "Builds for iOS and Android with a focus on native integrations, push notifications, background work, and consistent behaviour across platforms.",
       },
     },
   ],
   files: {
     sv: "assets/documents/agnes_sandberg_cv_sv.pdf",
     en: "assets/documents/agnes_sandberg_cv_en.pdf",
+  },
+  /** Pre-rendered first page (regenerate with scripts/make-cv-thumbnails.py). */
+  thumbnail: {
+    sv: "assets/images/cv_preview_sv.webp",
+    en: "assets/images/cv_preview_en.webp",
   },
   preview: {
     sv: "assets/documents/agnes_sandberg_cv_sv.pdf",
@@ -280,8 +289,16 @@ export const CV = {
 };
 
 /**
- * Portfolio projects shown on Projects page (order matters).
- * Optional `screenshot2x` (string path): high-DPI asset used in `srcset` for `.project-panel__screenshot`.
+ * Portfolio projects shown on the Projects page (order matters).
+ *
+ * Every text field can be a plain string or `{ sv, en }`.
+ *   roleType     Line under the project name (desktop) / above the tags (mobile)
+ *   period       Shown next to the name
+ *   tags         Chips. Strings, or `{ sv, en }` for tags that need translating
+ *   description  Intro text. A string, or `{ sv: [...], en: [...] }` for several paragraphs
+ *   bullets      `{ sv: [...], en: [...] }`
+ *   stores       `appStore` / `playStore` → store badges, `website` + `websiteLabel` → button
+ *   visible      `false` hides the project
  */
 export const PROJECTS = [
   {
@@ -289,24 +306,40 @@ export const PROJECTS = [
     visible: true,
     name: "Mecom",
     roleType: { sv: "Eget projekt", en: "Personal project" },
-    period: "2025–2026",
+    period: { sv: "Sedan 2025", en: "Since 2025" },
     logo: "assets/images/logo_mecom.jpg",
     screenshot: "assets/images/app_image_selections/Image_section_mecom.png",
-    tags: ["Flutter", "Git", "SQLite", "Supabase"],
+    tags: [
+      "Full stack",
+      "Flutter",
+      "Git",
+      "SQLite",
+      "Supabase",
+      "JavaScript",
+      "PostgreSQL",
+      "Firebase",
+      "Figma",
+    ],
     description: {
-      sv: "Applikation för att organisera produkter i personliga kataloger med varumärken, kategorier och filtrering. Local-first med Drift/SQLite och synkronisering mot Supabase.",
-      en: "App for organising products in personal catalogues with brands, categories, and filtering. Local-first with Drift/SQLite and sync to Supabase.",
+      sv: [
+        "Detta är min lilla bäbis som jag sedan i somras började skissa fram och som jag fortsatt sitta med på fritiden. Idén formades fram efter att jag vid upprepade tillfällen vid online-shopping, “tappade bort” eller av misstag råkade stänga fliken till den specifika e-handelsplattformen.",
+        "Idag hjälper appen mig att hitta bland allt som jag tycker är intressant på ett ställe.",
+      ],
+      en: [
+        "This is my little baby that I started sketching out last summer and have kept working on in my spare time. The idea came about after I repeatedly “lost” or accidentally closed the tab for a specific e-commerce site while shopping online.",
+        "Today the app helps me find my way among everything I find interesting, all in one place.",
+      ],
     },
     bullets: {
       sv: [
-        "Server-first-arkitektur med outbox och atomiska transaktioner.",
-        "Design och implementation av synkronisering mot Supabase.",
-        "Datamodellering för produkter, varumärken och importflöden.",
+        "Server-first-arkitektur mot Supabase — permanenta ID:n, tidsstämplar och validering sitter på servern. Lokalt sparad data speglar den senaste serverbekräftade datan. Detta möjliggör snabb läsning, offline-läsning av tidigare synkad data, stabil start om nätet strular.",
+        "Appen är byggd med hjälp av Flutter och Stacked CLI. Strukturerar data som ska lagras med hjälp av Drift.",
+        "Design",
       ],
       en: [
-        "Server-first architecture with outbox and atomic transactions.",
-        "Designed and implemented Supabase synchronisation.",
-        "Data modelling for products, brands, and import flows.",
+        "Server-first architecture against Supabase — permanent IDs, timestamps and validation live on the server. Locally stored data mirrors the latest server-confirmed data. This enables fast reads, offline reads of previously synced data, and a stable start when the network is unreliable.",
+        "The app is built with Flutter and Stacked CLI. Data to be stored is structured with Drift.",
+        "Design",
       ],
     },
     stores: {},
@@ -317,27 +350,41 @@ export const PROJECTS = [
     visible: true,
     name: "Viking Assistance",
     roleType: {
-      sv: "Projektanställd apputvecklare",
-      en: "Contract app developer",
+      sv: "Anställd apputvecklare på Third Act",
+      en: "App developer employed at Third Act",
     },
     period: "2025–2026",
     logo: "assets/images/logo_viking.jpg",
     screenshot: "assets/images/app_image_selections/Image_section_viking.png",
-    tags: ["Flutter", "Git", "SQLite", "Firebase", "Intercom"],
+    tags: [
+      "Flutter",
+      "Git",
+      "SQLite",
+      "Firebase",
+      "Azure",
+      "Worldline",
+      "3D-secure",
+      "Intercom",
+      "Postman",
+    ],
     description: {
-      sv: "Medlemsapp för vägassistans, försäkring och betalningar. Jag vidareutvecklade central affärslogik, betalningsflöden och plattformsintegrationer i en produktionsapp med stora användarvolymer.",
-      en: "Membership app for roadside assistance, insurance, and payments. I extended core business logic, payment flows, and platform integrations in a high-traffic production app.",
+      sv: "Arbetat med nyutveckling, vidareutveckling och förvaltning av mobilapplikationer för iOS och Android med Flutter och Dart. Utvecklat komplexa användar-, betalnings- och transaktionsflöden med tillhörande datamodeller och backendintegrationer. Arbetat med felsökning, prestandaoptimering och kvalitetssäkring genom analys och åtgärd av produktionsproblem. Förbättrat användarupplevelse, gränssnitt och informationshierarki samt hanterat plattformsspecifika lösningar, testning och releaseprocesser för både iOS och Android.",
+      en: "Worked on new development, further development and maintenance of mobile applications for iOS and Android with Flutter and Dart. Developed complex user, payment and transaction flows with associated data models and backend integrations. Worked on troubleshooting, performance optimisation and quality assurance by analysing and fixing production issues. Improved user experience, interface and information hierarchy, and handled platform-specific solutions, testing and release processes for both iOS and Android.",
     },
     bullets: {
       sv: [
-        "Design och implementation av betalnings- och prislogik (ProductPriceResolver).",
-        "Pushnotiser, Intercom och native bryggor för iOS/Android.",
-        "Testning, Crashlytics och release via App Store och Google Play.",
+        "Nyutveckling, vidareutveckling och förvaltning av mobilapplikationer för iOS och Android med Flutter och Dart.",
+        "Utveckling av komplexa användar-, betalnings- och transaktionsflöden, inklusive datamodeller och backendintegrationer.",
+        "Analys, felsökning och åtgärd av produktionsproblem med bland annat Firebase Crashlytics och plattformsspecifik diagnostik.",
+        "Förbättring av UI, informationshierarki och användarupplevelse, med fokus på tydliga och robusta flöden.",
+        "Ansvar för iOS- och Android-specifika lösningar, samt build-, test- och releaseprocesser.",
       ],
       en: [
-        "Designed and implemented payment and pricing logic (ProductPriceResolver).",
-        "Push notifications, Intercom, and native bridges for iOS/Android.",
-        "Testing, Crashlytics, and releases via App Store and Google Play.",
+        "New development, further development and maintenance of mobile applications for iOS and Android with Flutter and Dart.",
+        "Development of complex user, payment and transaction flows, including data models and backend integrations.",
+        "Analysis, troubleshooting and resolution of production issues using, among other things, Firebase Crashlytics and platform-specific diagnostics.",
+        "Improvements to UI, information hierarchy and user experience, with a focus on clear and robust flows.",
+        "Responsibility for iOS- and Android-specific solutions, as well as build, test and release processes.",
       ],
     },
     stores: {
@@ -379,27 +426,38 @@ export const PROJECTS = [
     visible: true,
     name: "Wakil",
     roleType: {
-      sv: "Projektanställd apputvecklare",
-      en: "Contract app developer",
+      sv: "Anställd apputvecklare på Third Act",
+      en: "App developer employed at Third Act",
     },
-    period: "2026",
+    period: { sv: "Våren 2025", en: "Spring 2025" },
     logo: "assets/images/logo_wakil.jpg",
     screenshot: "assets/images/app_image_selections/Image_section_wakil.png",
-    tags: ["Flutter", "Git", "Firebase", "REST API"],
+    tags: [
+      "Flutter",
+      "Swift",
+      "Kotlin",
+      "Geolocation",
+      "SQLite",
+      "Firebase",
+      "Azure",
+      "Git",
+    ],
     description: {
-      sv: "Säkerhetsapp med larmflöden och positionsdelning till larmcentral. Fokus på tillförlitlig bakgrundspositionering och plattformsspecifika begränsningar.",
-      en: "Security app with alarm flows and location sharing to an alarm centre. Focus on reliable background positioning and platform constraints.",
+      sv: "Ett pilotprojekt där jag ansvarade för produktutvecklingen, implementeringen och kvalitetssäkringen. Detta var en säkerhetsapplikation där tillförlitlig platsdelning med en larmcentral var en central funktion.",
+      en: "A pilot project where I was responsible for product development, implementation and quality assurance. This was a security application where reliable location sharing with an alarm centre was a central feature.",
     },
     bullets: {
       sv: [
-        "Design och implementation av larm- och PIN-flöden.",
-        "Bakgrundspositionering och FCM på iOS och Android.",
-        "Geografiska polygoner och kommunikation med backend.",
+        "Implementation av plats- och behörighetsfunktionalitet för iOS och Android.",
+        "Anpassning till operativsystemens olika krav och begränsningar för bakgrundsfunktionalitet.",
+        "Analys och testning av plattformsspecifika beteenden för att säkerställa konsekvent och förutsägbar funktionalitet.",
+        "Utveckling av användarflöden, autentisering och integrationer.",
       ],
       en: [
-        "Designed and implemented alarm and PIN flows.",
-        "Background positioning and FCM on iOS and Android.",
-        "Geographic polygons and backend communication.",
+        "Implementation of location and permission functionality for iOS and Android.",
+        "Adaptation to the operating systems’ differing requirements and limitations for background functionality.",
+        "Analysis and testing of platform-specific behaviour to ensure consistent and predictable functionality.",
+        "Development of user flows, authentication and integrations.",
       ],
     },
     stores: {},
@@ -410,13 +468,22 @@ export const PROJECTS = [
     visible: true,
     name: "Speedbox",
     roleType: {
-      sv: "Projektanställd apputvecklare",
-      en: "Contract app developer",
+      sv: "Anställd apputvecklare på Third Act",
+      en: "App developer employed at Third Act",
     },
     period: "2024–2026",
     logo: "assets/images/logo_speedbox.jpg",
     screenshot: "assets/images/app_image_selections/Image_section_speedbox.png",
-    tags: ["Flutter", "Git", "Blender", "3D"],
+    tags: [
+      "Flutter",
+      { sv: "Heuristisk UX-analys", en: "Heuristic UX analysis" },
+      { sv: "Animationer", en: "Animations" },
+      "Worldline",
+      "Firebase",
+      "Figma",
+      "Azure",
+      "Blender",
+    ],
     description: {
       sv: "3D-visualisering och produktpresentation av förvaringsskåp med korrekta mått och heuristisk UX-analys för att förmedla kapacitet.",
       en: "3D visualisation and product presentation of storage lockers with accurate dimensions and heuristic UX analysis to communicate capacity.",
@@ -435,11 +502,7 @@ export const PROJECTS = [
     },
     stores: {
       website: "https://www.speedbox.eu",
-      websiteBadge: "assets/icons/badge_speedbox_website.svg",
-      websiteLabel: {
-        sv: "Besök Speedbox officiella webbplats",
-        en: "Visit the official Speedbox website",
-      },
+      websiteLabel: { sv: "Till Speedbox", en: "Go to Speedbox" },
     },
     caseStudy: null,
   },
@@ -479,6 +542,7 @@ export function getProjectViewModel(slug, locale = getLocale()) {
     description: pickLocalized(project.description, locale),
     bullets: pickLocalizedList(project.bullets, locale),
     roleType: pickLocalized(project.roleType, locale),
+    period: pickLocalized(project.period, locale),
     caseStudyImages:
       project.caseStudy?.images?.map((img) => ({
         src: img.src,

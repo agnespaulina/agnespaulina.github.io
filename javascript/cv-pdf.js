@@ -1,13 +1,29 @@
 let pdfjsLibPromise = null;
 let renderGeneration = 0;
-let thumbnailGeneration = 0;
 
 export function cancelCvPdfRender() {
   renderGeneration += 1;
 }
 
-export function cancelCvPdfThumbnail() {
-  thumbnailGeneration += 1;
+const documentCache = new Map();
+
+/** Loads a PDF once per page load; later calls reuse the same download/parse. */
+function getPdfDocument(pdfUrl) {
+  if (!documentCache.has(pdfUrl)) {
+    const promise = loadPdfJs()
+      .then((lib) => lib.getDocument(pdfUrl).promise)
+      .catch((error) => {
+        documentCache.delete(pdfUrl);
+        throw error;
+      });
+    documentCache.set(pdfUrl, promise);
+  }
+  return documentCache.get(pdfUrl);
+}
+
+/** Warm up pdf.js and the PDF so the preview opens fast (call on hover/focus). */
+export function prefetchCvPdf(pdfUrl) {
+  getPdfDocument(pdfUrl).catch(() => {});
 }
 
 function loadPdfJs() {
@@ -41,10 +57,7 @@ export async function renderCvPdfInline(
   container.replaceChildren(status);
 
   try {
-    const pdfjsLib = await loadPdfJs();
-    if (generation !== renderGeneration) return;
-
-    const pdf = await pdfjsLib.getDocument(pdfUrl).promise;
+    const pdf = await getPdfDocument(pdfUrl);
     if (generation !== renderGeneration) return;
 
     const pagesWrap = document.createElement("div");
@@ -101,66 +114,5 @@ export async function renderCvPdfInline(
       wrap.appendChild(link);
     }
     container.replaceChildren(wrap);
-  }
-}
-
-/**
- * Renders the first page of a PDF as a preview thumbnail.
- */
-export async function renderCvPdfThumbnail(
-  container,
-  pdfUrl,
-  { loadingText, maxWidth = 280 } = {},
-) {
-  if (!container) return;
-
-  const generation = ++thumbnailGeneration;
-  const status = document.createElement("p");
-  status.className = "cv-resume__thumbnail-status";
-  status.textContent = loadingText ?? "Loading…";
-  container.replaceChildren(status);
-
-  try {
-    const pdfjsLib = await loadPdfJs();
-    if (generation !== thumbnailGeneration) return;
-
-    const pdf = await pdfjsLib.getDocument(pdfUrl).promise;
-    if (generation !== thumbnailGeneration) return;
-
-    const page = await pdf.getPage(1);
-    if (generation !== thumbnailGeneration) return;
-
-    const frameWidth =
-      container.clientWidth ||
-      container.getBoundingClientRect().width ||
-      maxWidth;
-    const targetWidth = Math.min(frameWidth, maxWidth);
-
-    const baseViewport = page.getViewport({ scale: 1 });
-    const scale = Math.max(targetWidth / baseViewport.width, 0.1);
-    const viewport = page.getViewport({ scale });
-    const outputScale = window.devicePixelRatio || 1;
-
-    const canvas = document.createElement("canvas");
-    canvas.className = "cv-resume__thumbnail-canvas";
-    canvas.width = Math.floor(viewport.width * outputScale);
-    canvas.height = Math.floor(viewport.height * outputScale);
-    canvas.style.width = "100%";
-    canvas.style.height = "auto";
-    canvas.setAttribute("aria-hidden", "true");
-
-    const ctx = canvas.getContext("2d");
-    ctx.scale(outputScale, outputScale);
-
-    await page.render({ canvasContext: ctx, viewport }).promise;
-    if (generation !== thumbnailGeneration) return;
-
-    container.replaceChildren(canvas);
-  } catch {
-    if (generation !== thumbnailGeneration) return;
-    const fallback = document.createElement("p");
-    fallback.className = "cv-resume__thumbnail-status";
-    fallback.textContent = loadingText ?? "…";
-    container.replaceChildren(fallback);
   }
 }

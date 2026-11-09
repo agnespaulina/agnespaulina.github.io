@@ -1,6 +1,6 @@
 import { resolveAssetPath } from "./assets.js";
 import { CASE_STUDY_SUBNAV, ICONS, SITE, UI } from "./content.js";
-import { getLocale, pickLocalized } from "./i18n.js";
+import { getLocale, pickLocalized, pickLocalizedList } from "./i18n.js";
 
 function escapeHtml(text) {
   return String(text)
@@ -109,55 +109,15 @@ export function renderWebPageHeader({ base, locale, active, resolveHref }) {
     </header>`;
 }
 
-export function renderTags(tags, className = "tag-list") {
+export function renderTags(tags, className = "tag-list", locale = getLocale()) {
   if (!tags?.length) return "";
   const items = tags
-    .map((tag) => `<li><span class="tag">${escapeHtml(tag)}</span></li>`)
+    .map(
+      (tag) =>
+        `<li><span class="tag">${escapeHtml(pickLocalized(tag, locale))}</span></li>`,
+    )
     .join("");
   return `<ul class="${className}">${items}</ul>`;
-}
-
-export function renderSkillDots(level, max = 5) {
-  const dots = [];
-  for (let i = 1; i <= max; i += 1) {
-    dots.push(
-      `<span class="skill-dots__dot${i <= level ? " is-filled" : ""}" aria-hidden="true"></span>`,
-    );
-  }
-  return `<span class="skill-dots" aria-label="${level} of ${max}">${dots.join("")}</span>`;
-}
-
-export function renderSkillRow(skill, base) {
-  return `
-    <li class="skill-row">
-      <img class="skill-row__icon" src="${resolveAssetPath(base, skill.icon)}" alt="" width="40" height="40" loading="lazy">
-      <span class="skill-row__name">${escapeHtml(skill.name)}</span>
-      ${renderSkillDots(skill.level)}
-    </li>`;
-}
-
-export function renderSkillColumns(skills, base) {
-  const mid = Math.ceil(skills.length / 2);
-  const left = skills.slice(0, mid);
-  const right = skills.slice(mid);
-  return `
-    <div class="skill-columns">
-      <ul class="skill-column">${left.map((s) => renderSkillRow(s, base)).join("")}</ul>
-      <ul class="skill-column">${right.map((s) => renderSkillRow(s, base)).join("")}</ul>
-    </div>`;
-}
-
-export function renderToolIcon(tool, base) {
-  const src = resolveAssetPath(base, tool.icon);
-  const isPdf = tool.icon.toLowerCase().endsWith(".pdf");
-  const inner = isPdf
-    ? `<object data="${src}" type="application/pdf" class="tool-icon__object" aria-label="${escapeHtml(tool.name)}"></object>`
-    : `<img src="${src}" alt="${escapeHtml(tool.name)}" class="tool-icon__img" loading="lazy">`;
-  return `<li class="tool-icon" title="${escapeHtml(tool.name)}">${inner}</li>`;
-}
-
-export function renderToolsRow(tools, base) {
-  return `<ul class="tools-row">${tools.map((t) => renderToolIcon(t, base)).join("")}</ul>`;
 }
 
 export function renderContactRow(contact, base) {
@@ -181,97 +141,54 @@ export function renderContactRow(contact, base) {
 export function renderStoreBadges(project, base, locale = getLocale()) {
   const { stores } = project;
   if (!stores?.appStore && !stores?.playStore && !stores?.website) return "";
+  const badge = (href, icon, alt) =>
+    `<a href="${escapeHtml(href)}" rel="noopener noreferrer" target="_blank" class="store-badge">
+        <img src="${resolveAssetPath(base, icon)}" alt="${escapeHtml(alt)}" height="40" loading="lazy">
+      </a>`;
   const parts = [];
-  if (stores.playStore) {
-    parts.push(
-      `<a href="${stores.playStore}" rel="noopener noreferrer" class="store-badge">
-        <img src="${resolveAssetPath(base, ICONS.googlePlay)}" alt="Google Play" width="120" height="36" loading="lazy">
-      </a>`,
-    );
-  }
-  if (stores.appStore) {
-    parts.push(
-      `<a href="${stores.appStore}" rel="noopener noreferrer" class="store-badge">
-        <img src="${resolveAssetPath(base, ICONS.appStore)}" alt="App Store" width="120" height="36" loading="lazy">
-      </a>`,
-    );
-  }
+  if (stores.appStore) parts.push(badge(stores.appStore, ICONS.appStore, "App Store"));
+  if (stores.playStore) parts.push(badge(stores.playStore, ICONS.googlePlay, "Google Play"));
   if (stores.website) {
-    const alt = escapeHtml(
-      pickLocalized(stores.websiteLabel, locale) || "speedbox.eu",
+    const label = pickLocalized(stores.websiteLabel, locale) || stores.website;
+    parts.push(
+      `<a href="${escapeHtml(stores.website)}" rel="noopener noreferrer" target="_blank" class="btn btn--solid">${escapeHtml(label)}</a>`,
     );
-    const badgeSrc = stores.websiteBadge
-      ? resolveAssetPath(base, stores.websiteBadge)
-      : "";
-    if (badgeSrc) {
-      parts.push(
-        `<a href="${escapeHtml(stores.website)}" rel="noopener noreferrer" class="store-badge">
-          <img src="${escapeHtml(badgeSrc)}" alt="${alt}" width="120" height="36" loading="lazy">
-        </a>`,
-      );
-    }
   }
   return `<div class="store-badges">${parts.join("")}</div>`;
 }
 
+/** One project card. Layout (mobile/desktop) is handled purely by CSS grid areas. */
 export function renderProjectPanel(project, base, locale = getLocale()) {
-  const description = pickLocalized(project.description, locale);
-  const bullets = pickLocalized(project.bullets, locale);
-  const roleType = pickLocalized(project.roleType, locale);
-  const screenshotSrc = resolveAssetPath(base, project.screenshot);
-  const screenshot2x =
-    typeof project.screenshot2x === "string" && project.screenshot2x.length
-      ? resolveAssetPath(base, project.screenshot2x)
-      : "";
-  const screenshotSrcset =
-    screenshot2x && screenshot2x !== screenshotSrc
-      ? `${escapeHtml(screenshot2x)} 2x`
-      : "";
-  const caseStudy = project.caseStudy;
+  const rawDescription = pickLocalized(project.description, locale);
+  const paragraphs = Array.isArray(rawDescription)
+    ? rawDescription
+    : [rawDescription];
+  const bullets = pickLocalizedList(project.bullets, locale);
   const caseHref =
-    caseStudy?.href && caseStudy.linkVisible !== false
-      ? `${base}${caseStudy.href}`
+    project.caseStudy?.href && project.caseStudy.linkVisible !== false
+      ? `${base}${project.caseStudy.href}`
       : null;
-
-  const bulletHtml = bullets.length
-    ? `<ul class="project-panel__bullets">${bullets.map((b) => `<li>${escapeHtml(b)}</li>`).join("")}</ul>`
-    : "";
-
-  const caseLink = caseHref
-    ? `<p class="project-panel__case"><a href="${caseHref}">${escapeHtml(pickLocalized(UI.caseStudyLink, locale))} →</a></p>`
-    : "";
-
-  const tagsHtml = renderTags(project.tags, "tag-list tag-list--project");
-  const hasTags = Boolean(tagsHtml);
-  const panelMods = hasTags ? "" : " project-panel--no-tags";
+  const tagsHtml = renderTags(project.tags, "tag-list tag-list--project", locale);
 
   return `
-    <article class="project-panel${panelMods}" data-project="${escapeHtml(project.slug)}">
-      <div class="project-panel__body">
-        <header class="project-panel__head">
-          <div class="project-panel__identity">
-            <img class="project-panel__logo" src="${resolveAssetPath(base, project.logo)}" alt="" width="45" height="45" loading="lazy">
-            <div class="project-panel__titles">
-              <h2 class="project-panel__title">${escapeHtml(project.name)}</h2>
-            </div>
-          </div>
-          <p class="project-panel__period">${escapeHtml(project.period)}</p>
-        </header>
-        <div class="project-panel__visual">
-          <div class="project-panel__screenshot-wrap">
-            <img class="project-panel__screenshot" src="${escapeHtml(screenshotSrc)}" ${screenshotSrcset ? `srcset="${screenshotSrcset}" sizes="(max-width: 899px) 100vw, min(22.375rem, 90vw)"` : ""} alt="${escapeHtml(project.name)} screenshots" width="358" height="277" loading="lazy" decoding="async">
-          </div>
-          ${renderStoreBadges(project, base)}
+    <article class="project-card" data-project="${escapeHtml(project.slug)}">
+      <header class="project-card__head">
+        <img class="project-card__logo" src="${resolveAssetPath(base, project.logo)}" alt="" width="45" height="45" loading="lazy">
+        <div class="project-card__titles">
+          <h2 class="project-card__title">${escapeHtml(project.name)}</h2>
+          <p class="project-card__period">${escapeHtml(pickLocalized(project.period, locale))}</p>
         </div>
-        <p class="project-panel__role">${escapeHtml(roleType)}</p>
-        ${hasTags ? `<div class="project-panel__tags">${tagsHtml}</div>` : ""}
-        <div class="project-panel__copy">
-          <div class="project-panel__text-block">
-            <p class="project-panel__description">${escapeHtml(description)}</p>
-            ${bulletHtml}
-          </div>
-          ${caseLink}
-        </div>
+      </header>
+      <p class="project-card__role">${escapeHtml(pickLocalized(project.roleType, locale))}</p>
+      ${tagsHtml ? `<div class="project-card__tags">${tagsHtml}</div>` : ""}
+      <div class="project-card__visual">
+        <img class="project-card__screenshot" src="${escapeHtml(resolveAssetPath(base, project.screenshot))}" alt="${escapeHtml(project.name)}" width="358" height="277" loading="lazy" decoding="async">
+        ${renderStoreBadges(project, base, locale)}
+      </div>
+      <div class="project-card__copy">
+        ${paragraphs.map((t) => `<p>${escapeHtml(t)}</p>`).join("")}
+        ${bullets.length ? `<ul class="project-card__bullets">${bullets.map((b) => `<li>${escapeHtml(b)}</li>`).join("")}</ul>` : ""}
+        ${caseHref ? `<a class="project-card__case" href="${caseHref}">${escapeHtml(pickLocalized(UI.caseStudyLink, locale))} →</a>` : ""}
       </div>
     </article>`;
 }
@@ -284,10 +201,10 @@ export function renderCvCompetencyCards(areas, base, locale = getLocale()) {
       const description = pickLocalized(item.description, locale);
       const iconSrc = resolveAssetPath(base, item.icon);
       return `<article class="cv-area-card">
-        <span class="cv-area-card__glyph" aria-hidden="true">
-          <img class="cv-area-card__glyph-icon" src="${iconSrc}" alt="" width="22" height="22" loading="lazy" decoding="async">
-        </span>
-        <h3 class="cv-area-card__title">${escapeHtml(title)}</h3>
+        <div class="cv-area-card__head">
+          <span class="cv-area-card__glyph" style="--glyph:url('${iconSrc}')" aria-hidden="true"></span>
+          <h3 class="cv-area-card__title">${escapeHtml(title)}</h3>
+        </div>
         <p class="cv-area-card__text">${escapeHtml(description)}</p>
       </article>`;
     })

@@ -12,8 +12,6 @@ import {
 import { getLocale, setLocale, pickLocalized } from "./i18n.js";
 import {
   renderProjectPanel,
-  renderSkillColumns,
-  renderToolsRow,
   renderContactRow,
   renderCarousel,
   renderProjectSubnav,
@@ -28,7 +26,7 @@ import {
   refreshCvOverlayIfOpen,
   syncCvDownloads,
 } from "./cv-overlay.js";
-import { renderCvPdfThumbnail, cancelCvPdfThumbnail } from "./cv-pdf.js";
+import { prefetchCvPdf } from "./cv-pdf.js";
 
 function initMobileNav() {
   const toggle = document.querySelector(".site-nav__toggle");
@@ -189,6 +187,11 @@ function renderAboutPage() {
     profileImg.src = resolveAssetPath(base, ABOUT.profileImage);
   }
 
+  const bioHeading = document.querySelector("[data-about-bio-heading]");
+  if (bioHeading) {
+    bioHeading.textContent = pickLocalized(ABOUT.bioHeading, locale);
+  }
+
   const contactHeading = document.querySelector("[data-about-contact-heading]");
   if (contactHeading) {
     contactHeading.textContent = pickLocalized(ABOUT.contactHeading, locale);
@@ -197,26 +200,6 @@ function renderAboutPage() {
   const contactMount = document.querySelector("[data-about-contact]");
   if (contactMount) {
     contactMount.innerHTML = renderContactRow(CONTACT, base);
-  }
-
-  const skillsHeading = document.querySelector("[data-about-skills-heading]");
-  if (skillsHeading) {
-    skillsHeading.textContent = pickLocalized(ABOUT.skillsHeading, locale);
-  }
-
-  const skillsMount = document.querySelector("[data-about-skills]");
-  if (skillsMount) {
-    skillsMount.innerHTML = renderSkillColumns(ABOUT.skills, base);
-  }
-
-  const toolsHeading = document.querySelector("[data-about-tools-heading]");
-  if (toolsHeading) {
-    toolsHeading.textContent = pickLocalized(ABOUT.toolsHeading, locale);
-  }
-
-  const toolsMount = document.querySelector("[data-about-tools]");
-  if (toolsMount) {
-    toolsMount.innerHTML = renderToolsRow(ABOUT.tools, base);
   }
 }
 
@@ -259,11 +242,20 @@ function renderCvPage() {
     thumbnailBtn.setAttribute("aria-label", viewLabel);
   }
   if (thumbnailMount) {
-    cancelCvPdfThumbnail();
-    renderCvPdfThumbnail(thumbnailMount, resolveAssetPath(base, pdfPath), {
-      loadingText: pickLocalized(CV.pdfLoading, locale),
-      maxWidth: window.matchMedia("(min-width: 900px)").matches ? 321 : 280,
-    });
+    const img = document.createElement("img");
+    img.className = "cv-resume__thumbnail-img";
+    img.src = resolveAssetPath(base, CV.thumbnail[locale] ?? CV.thumbnail.sv);
+    img.alt = "";
+    img.width = 1150;
+    img.height = 1628;
+    img.decoding = "async";
+    thumbnailMount.replaceChildren(img);
+  }
+  if (thumbnailBtn) {
+    const warm = () => prefetchCvPdf(resolveAssetPath(base, pdfPath));
+    thumbnailBtn.onpointerenter = warm;
+    thumbnailBtn.onfocus = warm;
+    thumbnailBtn.ontouchstart = warm;
   }
 
   syncCvDownloads(base, locale);

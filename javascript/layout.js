@@ -1,7 +1,7 @@
 import { SITE, CONTACT, ICONS, UI } from "./content.js";
 import { resolveAssetPath } from "./assets.js";
 import { getLocale, pickLocalized } from "./i18n.js";
-import { renderLangSwitch, renderWebPageHeader } from "./components.js";
+import { renderLangSwitch, renderWebPageHeader, renderContactRow } from "./components.js";
 
 function getBase() {
   return document.documentElement.dataset.base ?? "./";
@@ -114,13 +114,13 @@ function renderSiteFooter() {
   const locale = getLocale();
   const base = getBase();
   const year = new Date().getFullYear();
-  const rights = pickLocalized(SITE.footer, locale);
   const showLangInFooter = !document.body?.classList?.contains("site-theme-figma");
 
   return `
     <footer class="site-footer" data-component="site-footer">
       <div class="page-wrap site-footer__inner">
-        <p class="site-footer__copy">© ${year} ${escapeHtml(SITE.name)}. ${escapeHtml(rights)}</p>
+        ${currentPageId() !== "about" ? renderContactRow(CONTACT, base) : ""}
+        <p class="site-footer__copy">© ${year} ${escapeHtml(SITE.name)}</p>
         ${showLangInFooter ? renderLangSwitch(base, locale, "short") : ""}
       </div>
     </footer>`;
