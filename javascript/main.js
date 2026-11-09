@@ -3,22 +3,30 @@ import {
   ABOUT,
   CV,
   CONTACT,
+  ICONS,
+  SITE,
+  UI,
   getVisibleProjects,
   getProjectViewModel,
 } from "./content.js";
 import { getLocale, setLocale, pickLocalized } from "./i18n.js";
 import {
   renderProjectPanel,
-  renderSkillColumns,
-  renderToolsRow,
   renderContactRow,
   renderCarousel,
   renderProjectSubnav,
   renderHighlights,
   renderTags,
   renderStoreBadges,
+  renderCvCompetencyCards,
 } from "./components.js";
 import { resolveAssetPath } from "./assets.js";
+import {
+  initCvOverlay,
+  refreshCvOverlayIfOpen,
+  syncCvDownloads,
+} from "./cv-overlay.js";
+import { prefetchCvPdf } from "./cv-pdf.js";
 
 function initMobileNav() {
   const toggle = document.querySelector(".site-nav__toggle");
@@ -42,8 +50,15 @@ function initLanguageSwitch() {
   document.querySelectorAll("[data-lang-switch]").forEach((root) => {
     root.querySelectorAll("[data-lang]").forEach((btn) => {
       btn.addEventListener("click", () => {
-        setLocale(btn.dataset.lang);
-        refreshContent();
+        const next = btn.dataset.lang;
+        if (next === getLocale()) return;
+        setLocale(next);
+        document.querySelectorAll("[data-lang-switch]").forEach((group) => {
+          group.querySelectorAll("[data-lang]").forEach((peer) => {
+            peer.classList.toggle("is-active", peer.dataset.lang === next);
+          });
+        });
+        refreshContent({ animate: true });
       });
     });
   });
@@ -122,6 +137,38 @@ function initProjectSubnav() {
   });
 }
 
+function updateLocalizedUi() {
+  const locale = getLocale();
+  const page = document.body?.dataset?.page;
+
+  const skip = document.querySelector('.visually-hidden[href="#main"]');
+  if (skip) {
+    skip.textContent = pickLocalized(UI.skipToContent, locale);
+  }
+
+  if (page && UI.pageTitle[page]) {
+    document.title = `${pickLocalized(UI.pageTitle[page], locale)} | ${SITE.name}`;
+  }
+
+  document.querySelectorAll('[data-i18n="site-title"]').forEach((el) => {
+    el.textContent = pickLocalized(SITE.title, locale);
+  });
+
+  const nav = document.querySelector("#primary-nav-panel");
+  if (nav) {
+    nav.setAttribute("aria-label", pickLocalized(UI.mainNavAria, locale));
+  }
+
+  document.querySelectorAll("[data-lang-switch]").forEach((root) => {
+    root.setAttribute("aria-label", pickLocalized(UI.langSwitchAria, locale));
+  });
+
+  const subnav = document.querySelector("[data-project-subnav]");
+  if (subnav) {
+    subnav.setAttribute("aria-label", pickLocalized(UI.projectSubnavAria, locale));
+  }
+}
+
 function renderAboutPage() {
   const locale = getLocale();
   const base = getBase();
@@ -140,6 +187,11 @@ function renderAboutPage() {
     profileImg.src = resolveAssetPath(base, ABOUT.profileImage);
   }
 
+  const bioHeading = document.querySelector("[data-about-bio-heading]");
+  if (bioHeading) {
+    bioHeading.textContent = pickLocalized(ABOUT.bioHeading, locale);
+  }
+
   const contactHeading = document.querySelector("[data-about-contact-heading]");
   if (contactHeading) {
     contactHeading.textContent = pickLocalized(ABOUT.contactHeading, locale);
@@ -148,26 +200,6 @@ function renderAboutPage() {
   const contactMount = document.querySelector("[data-about-contact]");
   if (contactMount) {
     contactMount.innerHTML = renderContactRow(CONTACT, base);
-  }
-
-  const skillsHeading = document.querySelector("[data-about-skills-heading]");
-  if (skillsHeading) {
-    skillsHeading.textContent = pickLocalized(ABOUT.skillsHeading, locale);
-  }
-
-  const skillsMount = document.querySelector("[data-about-skills]");
-  if (skillsMount) {
-    skillsMount.innerHTML = renderSkillColumns(ABOUT.skills, base);
-  }
-
-  const toolsHeading = document.querySelector("[data-about-tools-heading]");
-  if (toolsHeading) {
-    toolsHeading.textContent = pickLocalized(ABOUT.toolsHeading, locale);
-  }
-
-  const toolsMount = document.querySelector("[data-about-tools]");
-  if (toolsMount) {
-    toolsMount.innerHTML = renderToolsRow(ABOUT.tools, base);
   }
 }
 
@@ -179,28 +211,74 @@ function renderProjectsPage() {
   mount.innerHTML = getVisibleProjects()
     .map((p) => renderProjectPanel(p, base, locale))
     .join("");
+
+  // Mobile: tapping the pinned project header scrolls back to the top of that card.
+  if (!mount.dataset.scrollTopBound) {
+    mount.dataset.scrollTopBound = "true";
+    mount.addEventListener("click", (event) => {
+      const head = event.target.closest(".project-card__head");
+      if (!head || window.matchMedia("(min-width: 900px)").matches) return;
+      const reduceMotion = window.matchMedia(
+        "(prefers-reduced-motion: reduce)",
+      ).matches;
+      head.closest(".project-card")?.scrollIntoView({
+        behavior: reduceMotion ? "auto" : "smooth",
+        block: "start",
+      });
+    });
+  }
 }
 
 function renderCvPage() {
   const locale = getLocale();
   const base = getBase();
-  const preview = document.querySelector("[data-cv-preview]");
-  const download = document.querySelector("[data-cv-download]");
-  const label = document.querySelector("[data-cv-download-label]");
-
+  const areasHeading = document.querySelector("[data-cv-areas-heading]");
+  const areasGrid = document.querySelector("[data-cv-areas-grid]");
+  const resumeHeading = document.querySelector("[data-cv-resume-heading]");
+  const resumeIntro = document.querySelector("[data-cv-resume-intro]");
+  const thumbnailBtn = document.querySelector("[data-cv-thumbnail]");
+  const thumbnailMount = document.querySelector("[data-cv-thumbnail-mount]");
+  const downloadIcon = document.querySelector("[data-cv-download-icon]");
   const pdfPath = CV.preview[locale] ?? CV.preview.sv;
-  const filePath = CV.files[locale] ?? CV.files.sv;
 
-  if (preview) {
-    preview.src = resolveAssetPath(base, pdfPath);
+  if (areasHeading) {
+    areasHeading.textContent = pickLocalized(CV.areasHeading, locale);
   }
-  if (download) {
-    download.href = resolveAssetPath(base, filePath);
-    download.setAttribute("download", "");
+  if (areasGrid) {
+    areasGrid.innerHTML = renderCvCompetencyCards(CV.competencyAreas, base, locale);
   }
-  if (label) {
-    label.textContent = pickLocalized(CV.downloadLabel, locale);
+  if (resumeHeading) {
+    resumeHeading.textContent = pickLocalized(CV.resumeHeading, locale);
   }
+  if (resumeIntro) {
+    resumeIntro.textContent = pickLocalized(CV.resumeIntro, locale);
+  }
+  const viewLabel = pickLocalized(CV.viewCvLabel, locale);
+  if (thumbnailBtn) {
+    thumbnailBtn.setAttribute("aria-label", viewLabel);
+  }
+  if (thumbnailMount) {
+    const img = document.createElement("img");
+    img.className = "cv-resume__thumbnail-img";
+    img.src = resolveAssetPath(base, CV.thumbnail[locale] ?? CV.thumbnail.sv);
+    img.alt = "";
+    img.width = 1150;
+    img.height = 1628;
+    img.decoding = "async";
+    thumbnailMount.replaceChildren(img);
+  }
+  if (thumbnailBtn) {
+    const warm = () => prefetchCvPdf(resolveAssetPath(base, pdfPath));
+    thumbnailBtn.onpointerenter = warm;
+    thumbnailBtn.onfocus = warm;
+    thumbnailBtn.ontouchstart = warm;
+  }
+
+  syncCvDownloads(base, locale);
+  if (downloadIcon) {
+    downloadIcon.src = resolveAssetPath(base, ICONS.download);
+  }
+  refreshCvOverlayIfOpen();
 }
 
 function renderVikingCaseStudy() {
@@ -211,7 +289,7 @@ function renderVikingCaseStudy() {
 
   const subnavMount = document.querySelector("[data-viking-subnav]");
   if (subnavMount) {
-    subnavMount.outerHTML = renderProjectSubnav();
+    subnavMount.outerHTML = renderProjectSubnav(undefined, locale);
   }
 
   const carouselMount = document.querySelector("[data-viking-carousel]");
@@ -220,6 +298,7 @@ function renderVikingCaseStudy() {
       project.caseStudyImages,
       base,
       "viking-carousel",
+      locale,
     );
   }
 
@@ -245,19 +324,38 @@ function escapeHtml(text) {
     .replace(/"/g, "&quot;");
 }
 
-function refreshContent() {
-  mountLayout();
-  initMobileNav();
-  initLanguageSwitch();
-  renderAboutPage();
-  renderProjectsPage();
-  renderCvPage();
-  renderVikingCaseStudy();
-  initCarousels();
-  initProjectSubnav();
+function refreshContent({ animate = false } = {}) {
+  const apply = () => {
+    mountLayout();
+    initMobileNav();
+    initLanguageSwitch();
+    renderAboutPage();
+    renderProjectsPage();
+    renderCvPage();
+    renderVikingCaseStudy();
+    updateLocalizedUi();
+    initCarousels();
+    initProjectSubnav();
+  };
+
+  const main = document.querySelector(".page-main");
+  if (animate && main && typeof document.startViewTransition === "function") {
+    main.classList.add("is-view-transitioning");
+    const transition = document.startViewTransition(apply);
+    transition.finished.finally(() => {
+      main.classList.remove("is-view-transitioning");
+    });
+    return;
+  }
+
+  apply();
 }
 
 document.addEventListener("DOMContentLoaded", () => {
   setLocale(getLocale());
+  initCvOverlay();
   refreshContent();
+  requestAnimationFrame(() => {
+    document.body.classList.add("is-content-ready");
+  });
 });

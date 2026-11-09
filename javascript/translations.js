@@ -9,4 +9,6 @@ export {
   CV,
   CONTACT,
   ICONS,
+  UI,
+  CASE_STUDY_SUBNAV,
 } from "./content.js";

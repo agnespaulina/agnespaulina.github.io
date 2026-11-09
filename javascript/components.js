@@ -1,6 +1,6 @@
 import { resolveAssetPath } from "./assets.js";
-import { ICONS } from "./content.js";
-import { getLocale, pickLocalized } from "./i18n.js";
+import { CASE_STUDY_SUBNAV, ICONS, SITE, UI } from "./content.js";
+import { getLocale, pickLocalized, pickLocalizedList } from "./i18n.js";
 
 function escapeHtml(text) {
   return String(text)
@@ -10,68 +10,114 @@ function escapeHtml(text) {
     .replace(/"/g, "&quot;");
 }
 
-export function renderLangSwitch(base, locale, variant = "short") {
-  const labels =
-    variant === "long"
-      ? { en: "English", sv: "Swedish" }
-      : { en: "En", sv: "Sv" };
-  return `
-    <div class="lang-switch" data-lang-switch role="group" aria-label="Language">
+function langSwitchButton(locale, lang, labels) {
+  const isActive = locale === lang;
+  return `<button type="button" class="lang-switch__btn${isActive ? " is-active" : ""}" data-lang="${lang}" aria-pressed="${isActive ? "true" : "false"}">
+      <span class="lang-switch__label lang-switch__label--full">${escapeHtml(labels.full)}</span>
+      <span class="lang-switch__label lang-switch__label--abbr">${escapeHtml(labels.abbr)}</span>
+    </button>`;
+}
+
+/**
+ * Shared language toggle. Figma-header uses CSS to switch full/abbr labels
+ * at the same breakpoint as web-page-header (no separate markup per page).
+ */
+export function renderLangSwitch(base, locale, variant = "figma") {
+  const aria = pickLocalized(UI.langSwitchAria, locale);
+  if (variant !== "figma") {
+    const labels = { en: "En", sv: "Sv" };
+    return `
+    <div class="lang-switch" data-lang-switch role="group" aria-label="${escapeHtml(aria)}">
       <button type="button" class="lang-switch__btn${locale === "en" ? " is-active" : ""}" data-lang="en">${labels.en}</button>
       <span class="lang-switch__sep">/</span>
       <button type="button" class="lang-switch__btn${locale === "sv" ? " is-active" : ""}" data-lang="sv">${labels.sv}</button>
     </div>`;
-}
-
-export function renderTags(tags, className = "tag-list") {
-  if (!tags?.length) return "";
-  const items = tags
-    .map((tag) => `<li><span class="tag">${escapeHtml(tag)}</span></li>`)
-    .join("");
-  return `<ul class="${className}">${items}</ul>`;
-}
-
-export function renderSkillDots(level, max = 5) {
-  const dots = [];
-  for (let i = 1; i <= max; i += 1) {
-    dots.push(
-      `<span class="skill-dots__dot${i <= level ? " is-filled" : ""}" aria-hidden="true"></span>`,
-    );
   }
-  return `<span class="skill-dots" aria-label="${level} of ${max}">${dots.join("")}</span>`;
-}
 
-export function renderSkillRow(skill, base) {
   return `
-    <li class="skill-row">
-      <img class="skill-row__icon" src="${resolveAssetPath(base, skill.icon)}" alt="" width="40" height="40" loading="lazy">
-      <span class="skill-row__name">${escapeHtml(skill.name)}</span>
-      ${renderSkillDots(skill.level)}
-    </li>`;
-}
-
-export function renderSkillColumns(skills, base) {
-  const mid = Math.ceil(skills.length / 2);
-  const left = skills.slice(0, mid);
-  const right = skills.slice(mid);
-  return `
-    <div class="skill-columns">
-      <ul class="skill-column">${left.map((s) => renderSkillRow(s, base)).join("")}</ul>
-      <ul class="skill-column">${right.map((s) => renderSkillRow(s, base)).join("")}</ul>
+    <div class="lang-switch lang-switch--figma" data-lang-switch role="group" aria-label="${escapeHtml(aria)}">
+      ${langSwitchButton(locale, "sv", SITE.lang.sv)}
+      <span class="lang-switch__sep">/</span>
+      ${langSwitchButton(locale, "en", SITE.lang.en)}
     </div>`;
 }
 
-export function renderToolIcon(tool, base) {
-  const src = resolveAssetPath(base, tool.icon);
-  const isPdf = tool.icon.toLowerCase().endsWith(".pdf");
-  const inner = isPdf
-    ? `<object data="${src}" type="application/pdf" class="tool-icon__object" aria-label="${escapeHtml(tool.name)}"></object>`
-    : `<img src="${src}" alt="${escapeHtml(tool.name)}" class="tool-icon__img" loading="lazy">`;
-  return `<li class="tool-icon" title="${escapeHtml(tool.name)}">${inner}</li>`;
+function renderHeaderTabs(active, locale, resolveHref) {
+  const items = [
+    { id: "about", ...SITE.nav.about },
+    { id: "projects", ...SITE.nav.projects },
+    { id: "cv", ...SITE.nav.cv },
+  ];
+
+  return items
+    .map((item) => {
+      const label = pickLocalized(item, locale);
+      const isActive = active === item.id;
+      return `
+        <a class="web-page-header__tab${isActive ? " is-active" : ""}"
+           href="${resolveHref(item.href)}"
+           ${isActive ? 'aria-current="page"' : ""}>
+          <span class="web-page-header__tab-label">${escapeHtml(label)}</span>
+          <span class="web-page-header__tab-indicator" aria-hidden="true"></span>
+        </a>`;
+    })
+    .join("");
 }
 
-export function renderToolsRow(tools, base) {
-  return `<ul class="tools-row">${tools.map((t) => renderToolIcon(t, base)).join("")}</ul>`;
+/**
+ * Shared site header (Figma `web-page-header`). Used on every themed HTML page.
+ * Copy and links come from `SITE` in content.js.
+ */
+export function renderWebPageHeader({ base, locale, active, resolveHref }) {
+  const title = pickLocalized(SITE.title, locale);
+  const emailLabel = pickLocalized(SITE.nav.email, locale);
+  const [firstName, ...restName] = SITE.name.split(" ");
+  const lastName = restName.join(" ");
+  const emailHref = SITE.nav.email.href;
+
+  return `
+    <header class="web-page-header site-chrome site-chrome--figma" data-component="site-header">
+      <div class="web-page-header__band">
+        <div class="web-page-header__inner">
+          <div class="web-page-header__title-row">
+            <div class="web-page-header__brand">
+              <a class="web-page-header__brand-link" href="${resolveHref("about.html")}">
+                <span class="web-page-header__name">
+                  <span class="web-page-header__name-part">${escapeHtml(firstName)}</span>
+                  <span class="web-page-header__name-part">${escapeHtml(lastName)}</span>
+                </span>
+                <span class="web-page-header__role" data-i18n="site-title">${escapeHtml(title)}</span>
+              </a>
+            </div>
+            <div class="web-page-header__lead">
+              <a class="web-page-header__email" href="${emailHref}" aria-label="${escapeHtml(emailLabel)}">
+                <img class="web-page-header__email-icon" src="${resolveAssetPath(base, ICONS.email)}" alt="" width="22" height="22">
+                <span class="web-page-header__email-label">${escapeHtml(emailLabel)}</span>
+              </a>
+            </div>
+          </div>
+          <div class="web-page-header__nav-row">
+            <nav id="primary-nav-panel" class="web-page-header__tabs" aria-label="${escapeHtml(pickLocalized(UI.mainNavAria, locale))}">
+              ${renderHeaderTabs(active, locale, resolveHref)}
+            </nav>
+            <div class="web-page-header__trailing">
+              ${renderLangSwitch(base, locale, "figma")}
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>`;
+}
+
+export function renderTags(tags, className = "tag-list", locale = getLocale()) {
+  if (!tags?.length) return "";
+  const items = tags
+    .map(
+      (tag) =>
+        `<li><span class="tag">${escapeHtml(pickLocalized(tag, locale))}</span></li>`,
+    )
+    .join("");
+  return `<ul class="${className}">${items}</ul>`;
 }
 
 export function renderContactRow(contact, base) {
@@ -92,87 +138,77 @@ export function renderContactRow(contact, base) {
     </div>`;
 }
 
-export function renderStoreBadges(project, base) {
+export function renderStoreBadges(project, base, locale = getLocale()) {
   const { stores } = project;
-  if (!stores?.appStore && !stores?.playStore) return "";
+  if (!stores?.appStore && !stores?.playStore && !stores?.website) return "";
+  const badge = (href, icon, alt) =>
+    `<a href="${escapeHtml(href)}" rel="noopener noreferrer" target="_blank" class="store-badge">
+        <img src="${resolveAssetPath(base, icon)}" alt="${escapeHtml(alt)}" height="40" loading="lazy">
+      </a>`;
   const parts = [];
-  if (stores.playStore) {
+  if (stores.appStore) parts.push(badge(stores.appStore, ICONS.appStore, "App Store"));
+  if (stores.playStore) parts.push(badge(stores.playStore, ICONS.googlePlay, "Google Play"));
+  if (stores.website) {
+    const label = pickLocalized(stores.websiteLabel, locale) || stores.website;
     parts.push(
-      `<a href="${stores.playStore}" rel="noopener noreferrer" class="store-badge">
-        <img src="${resolveAssetPath(base, ICONS.googlePlay)}" alt="Google Play" width="120" height="36" loading="lazy">
-      </a>`,
-    );
-  }
-  if (stores.appStore) {
-    parts.push(
-      `<a href="${stores.appStore}" rel="noopener noreferrer" class="store-badge">
-        <img src="${resolveAssetPath(base, ICONS.appStore)}" alt="App Store" width="120" height="36" loading="lazy">
-      </a>`,
+      `<a href="${escapeHtml(stores.website)}" rel="noopener noreferrer" target="_blank" class="btn btn--solid">${escapeHtml(label)}</a>`,
     );
   }
   return `<div class="store-badges">${parts.join("")}</div>`;
 }
 
+/** One project card. Layout (mobile/desktop) is handled purely by CSS grid areas. */
 export function renderProjectPanel(project, base, locale = getLocale()) {
-  const description = pickLocalized(project.description, locale);
-  const bullets = pickLocalized(project.bullets, locale);
-  const roleType = pickLocalized(project.roleType, locale);
-  const screenshotSrc = resolveAssetPath(base, project.screenshot);
-  const screenshot2x =
-    typeof project.screenshot2x === "string" && project.screenshot2x.length
-      ? resolveAssetPath(base, project.screenshot2x)
-      : "";
-  const screenshotSrcset =
-    screenshot2x && screenshot2x !== screenshotSrc
-      ? `${escapeHtml(screenshot2x)} 2x`
-      : "";
-  const caseStudy = project.caseStudy;
+  const rawDescription = pickLocalized(project.description, locale);
+  const paragraphs = Array.isArray(rawDescription)
+    ? rawDescription
+    : [rawDescription];
+  const bullets = pickLocalizedList(project.bullets, locale);
   const caseHref =
-    caseStudy?.href && caseStudy.linkVisible !== false
-      ? `${base}${caseStudy.href}`
+    project.caseStudy?.href && project.caseStudy.linkVisible !== false
+      ? `${base}${project.caseStudy.href}`
       : null;
-
-  const bulletHtml = bullets.length
-    ? `<ul class="project-panel__bullets">${bullets.map((b) => `<li>${escapeHtml(b)}</li>`).join("")}</ul>`
-    : "";
-
-  const caseLink = caseHref
-    ? `<p class="project-panel__case"><a href="${caseHref}">${locale === "sv" ? "Case study" : "Case study"} →</a></p>`
-    : "";
-
-  const tagsHtml = renderTags(project.tags, "tag-list tag-list--project");
-  const hasTags = Boolean(tagsHtml);
-  const panelMods = hasTags ? "" : " project-panel--no-tags";
+  const tagsHtml = renderTags(project.tags, "tag-list tag-list--project", locale);
 
   return `
-    <article class="project-panel${panelMods}" data-project="${escapeHtml(project.slug)}">
-      <div class="project-panel__body">
-        <header class="project-panel__head">
-          <div class="project-panel__identity">
-            <img class="project-panel__logo" src="${resolveAssetPath(base, project.logo)}" alt="" width="48" height="48" loading="lazy">
-            <div class="project-panel__titles">
-              <h2 class="project-panel__title">${escapeHtml(project.name)}</h2>
-              <p class="project-panel__role">${escapeHtml(roleType)}</p>
-            </div>
-          </div>
-          <p class="project-panel__period">${escapeHtml(project.period)}</p>
-        </header>
-        <div class="project-panel__visual">
-          <div class="project-panel__screenshot-wrap">
-            <img class="project-panel__screenshot" src="${escapeHtml(screenshotSrc)}" ${screenshotSrcset ? `srcset="${screenshotSrcset}" sizes="(max-width: 899px) 100vw, min(22.375rem, 90vw)"` : ""} alt="${escapeHtml(project.name)} screenshots" width="358" height="277" loading="lazy" decoding="async">
-          </div>
-          ${renderStoreBadges(project, base)}
+    <article class="project-card" data-project="${escapeHtml(project.slug)}">
+      <header class="project-card__head">
+        <img class="project-card__logo" src="${resolveAssetPath(base, project.logo)}" alt="" width="45" height="45" loading="lazy">
+        <div class="project-card__titles">
+          <h2 class="project-card__title">${escapeHtml(project.name)}</h2>
+          <p class="project-card__period">${escapeHtml(pickLocalized(project.period, locale))}</p>
         </div>
-        ${hasTags ? `<div class="project-panel__tags">${tagsHtml}</div>` : ""}
-        <div class="project-panel__copy">
-          <div class="project-panel__text-block">
-            <p class="project-panel__description">${escapeHtml(description)}</p>
-            ${bulletHtml}
-          </div>
-          ${caseLink}
-        </div>
+      </header>
+      <p class="project-card__role">${escapeHtml(pickLocalized(project.roleType, locale))}</p>
+      ${tagsHtml ? `<div class="project-card__tags">${tagsHtml}</div>` : ""}
+      <div class="project-card__visual">
+        <img class="project-card__screenshot" src="${escapeHtml(resolveAssetPath(base, project.screenshot))}" alt="${escapeHtml(project.name)}" width="358" height="277" loading="lazy" decoding="async">
+        ${renderStoreBadges(project, base, locale)}
+      </div>
+      <div class="project-card__copy">
+        ${paragraphs.map((t) => `<p>${escapeHtml(t)}</p>`).join("")}
+        ${bullets.length ? `<ul class="project-card__bullets">${bullets.map((b) => `<li>${escapeHtml(b)}</li>`).join("")}</ul>` : ""}
+        ${caseHref ? `<a class="project-card__case" href="${caseHref}">${escapeHtml(pickLocalized(UI.caseStudyLink, locale))} →</a>` : ""}
       </div>
     </article>`;
+}
+
+export function renderCvCompetencyCards(areas, base, locale = getLocale()) {
+  if (!areas?.length) return "";
+  return areas
+    .map((item) => {
+      const title = pickLocalized(item.title, locale);
+      const description = pickLocalized(item.description, locale);
+      const iconSrc = resolveAssetPath(base, item.icon);
+      return `<article class="cv-area-card">
+        <div class="cv-area-card__head">
+          <span class="cv-area-card__glyph" style="--glyph:url('${iconSrc}')" aria-hidden="true"></span>
+          <h3 class="cv-area-card__title">${escapeHtml(title)}</h3>
+        </div>
+        <p class="cv-area-card__text">${escapeHtml(description)}</p>
+      </article>`;
+    })
+    .join("");
 }
 
 export function renderHighlights(items) {
@@ -181,11 +217,18 @@ export function renderHighlights(items) {
   return `<ul class="highlight-list">${lis}</ul>`;
 }
 
-export function renderCarousel(images, base, carouselId = "project-carousel") {
+export function renderCarousel(
+  images,
+  base,
+  carouselId = "project-carousel",
+  locale = getLocale(),
+) {
   const slides = images ?? [];
   if (!slides.length) {
-    return `<p class="muted">Bilder kommer snart.</p>`;
+    return `<p class="muted">${locale === "sv" ? "Bilder kommer snart." : "Images coming soon."}</p>`;
   }
+
+  const slideWord = pickLocalized(UI.carouselSlideLabel, locale);
 
   const slideHtml = slides
     .map(
@@ -199,9 +242,12 @@ export function renderCarousel(images, base, carouselId = "project-carousel") {
   const dots = slides
     .map(
       (_, index) =>
-        `<button type="button" class="carousel__dot${index === 0 ? " is-active" : ""}" data-carousel-target="${carouselId}" data-index="${index}" aria-label="Bild ${index + 1}"></button>`,
+        `<button type="button" class="carousel__dot${index === 0 ? " is-active" : ""}" data-carousel-target="${carouselId}" data-index="${index}" aria-label="${escapeHtml(slideWord)} ${index + 1}"></button>`,
     )
     .join("");
+
+  const prev = escapeHtml(pickLocalized(UI.carouselPrev, locale));
+  const next = escapeHtml(pickLocalized(UI.carouselNext, locale));
 
   return `
     <div class="carousel" id="${carouselId}" data-carousel>
@@ -209,33 +255,31 @@ export function renderCarousel(images, base, carouselId = "project-carousel") {
       ${
         slides.length > 1
           ? `<div class="carousel__controls">
-        <button type="button" class="carousel__btn carousel__btn--prev" data-carousel-target="${carouselId}" aria-label="Föregående">‹</button>
+        <button type="button" class="carousel__btn carousel__btn--prev" data-carousel-target="${carouselId}" aria-label="${prev}">‹</button>
         <div class="carousel__dots">${dots}</div>
-        <button type="button" class="carousel__btn carousel__btn--next" data-carousel-target="${carouselId}" aria-label="Nästa">›</button>
+        <button type="button" class="carousel__btn carousel__btn--next" data-carousel-target="${carouselId}" aria-label="${next}">›</button>
       </div>`
           : ""
       }
     </div>`;
 }
 
-export function renderProjectSubnav(sectionIds) {
-  const items = [
-    { id: "overview", label: "Overview" },
-    { id: "contribution", label: "My contribution" },
-    { id: "challenges", label: "Technical challenges" },
-    { id: "architecture", label: "Architecture & implementation" },
-    { id: "results", label: "Results & learnings" },
-  ].filter((item) => !sectionIds || sectionIds.includes(item.id));
+export function renderProjectSubnav(sectionIds, locale = getLocale()) {
+  const items = CASE_STUDY_SUBNAV.filter(
+    (item) => !sectionIds || sectionIds.includes(item.id),
+  );
 
   const links = items
     .map(
       (item) =>
-        `<a class="project-subnav__link" href="#${item.id}" data-subnav-link="${item.id}">${item.label}</a>`,
+        `<a class="project-subnav__link" href="#${item.id}" data-subnav-link="${item.id}">${escapeHtml(pickLocalized(item.label, locale))}</a>`,
     )
     .join("");
 
+  const subnavAria = escapeHtml(pickLocalized(UI.projectSubnavAria, locale));
+
   return `
-    <nav class="project-subnav" aria-label="Projektsektioner" data-project-subnav>
+    <nav class="project-subnav" aria-label="${subnavAria}" data-project-subnav>
       <div class="page-wrap project-subnav__inner">${links}</div>
     </nav>`;
 }
