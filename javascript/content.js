@@ -11,6 +11,7 @@ export const ICONS = {
   email: "assets/icons/garden_email-fill-20.svg",
   phone: "assets/icons/iconPhone.svg",
   linkedIn: "assets/icons/icon_linkedIn.svg",
+  download: "assets/icons/icon_download.svg",
   appStore: "assets/icons/icon_downloadAppStore.svg",
   googlePlay: "assets/icons/icon_downloadGooglePlay.svg",
 };
@@ -18,7 +19,7 @@ export const ICONS = {
 export const SITE = {
   name: "Agnes Sandberg",
   title: {
-    sv: "Mobile app developer",
+    sv: "Mobilapputvecklare",
     en: "Mobile app developer",
   },
   footer: {
@@ -26,8 +27,8 @@ export const SITE = {
     en: "All rights reserved.",
   },
   nav: {
-    about: { sv: "About", en: "About", href: "about.html" },
-    projects: { sv: "Projects", en: "Projects", href: "projects.html" },
+    about: { sv: "Om mig", en: "About", href: "about.html" },
+    projects: { sv: "Projekt", en: "Projects", href: "projects.html" },
     cv: { sv: "CV", en: "CV", href: "cv.html" },
     email: {
       sv: "Mejla mig",
@@ -60,12 +61,12 @@ export const ABOUT = {
       "Beyond implementation I have experience in early product work: requirements analysis, user flows, prototypes, and collaboration with design and stakeholders. The goal is always something robust in production and straightforward for the team to extend.",
     ],
   },
-  contactHeading: { sv: "Contact", en: "Contact" },
+  contactHeading: { sv: "Kontakt", en: "Contact" },
   skillsHeading: {
-    sv: "Programming experiance",
+    sv: "Programmeringserfarenhet",
     en: "Programming experience",
   },
-  toolsHeading: { sv: "Tools", en: "Tools" },
+  toolsHeading: { sv: "Verktyg", en: "Tools" },
   skills: [
     {
       name: "Flutter",
@@ -138,8 +139,8 @@ export const ABOUT = {
     { name: "Postman", icon: "assets/svg/tools_icons/tool=postman.svg" },
     { name: "Supabase", icon: "assets/svg/tools_icons/tool=supabase.svg" },
     { name: "Docker", icon: "assets/svg/tools_icons/tool=docker.svg" },
-    { name: "Cursor", icon: "assets/svg/tools_icons/tool=claude.svg" },
-    { name: "Claude", icon: "assets/svg/tools_icons/tool=cursor.svg" },
+    { name: "Cursor", icon: "assets/svg/tools_icons/tool=cursor.svg" },
+    { name: "Claude", icon: "assets/svg/tools_icons/tool=claude.svg" },
     {
       name: "Unreal Engine 5",
       icon: "assets/svg/tools_icons/tool=unrealEnginge5.svg",
@@ -149,8 +150,117 @@ export const ABOUT = {
   ],
 };
 
+/** UI copy (navigated pages, chrome, case study). */
+export const UI = {
+  skipToContent: { sv: "Hoppa till innehåll", en: "Skip to content" },
+  mainNavAria: { sv: "Huvudnavigering", en: "Main navigation" },
+  langSwitchAria: { sv: "Språk", en: "Language" },
+  projectSubnavAria: { sv: "Projektsektioner", en: "Project sections" },
+  carouselPrev: { sv: "Föregående", en: "Previous" },
+  carouselNext: { sv: "Nästa", en: "Next" },
+  carouselSlideLabel: { sv: "Bild", en: "Image" },
+  caseStudyLink: { sv: "Case study", en: "Case study" },
+  pageTitle: {
+    about: { sv: "Om mig", en: "About" },
+    projects: { sv: "Projekt", en: "Projects" },
+    cv: { sv: "CV", en: "CV" },
+    "project-viking": { sv: "Viking Assistance", en: "Viking Assistance" },
+  },
+};
+
+export const CASE_STUDY_SUBNAV = [
+  { id: "overview", label: { sv: "Översikt", en: "Overview" } },
+  { id: "contribution", label: { sv: "Mitt bidrag", en: "My contribution" } },
+  {
+    id: "challenges",
+    label: { sv: "Tekniska utmaningar", en: "Technical challenges" },
+  },
+  {
+    id: "architecture",
+    label: {
+      sv: "Arkitektur och implementation",
+      en: "Architecture & implementation",
+    },
+  },
+  {
+    id: "results",
+    label: { sv: "Resultat och lärdomar", en: "Results & learnings" },
+  },
+];
+
 export const CV = {
-  downloadLabel: { sv: "Download", en: "Download" },
+  areasHeading: { sv: "Mina kompetensområden", en: "My competency areas" },
+  resumeHeading: { sv: "Mitt CV", en: "My CV" },
+  resumeIntro: {
+    sv: "Vill du veta mer om min erfarenhet? Här hittar du mitt fullständiga CV med arbetslivserfarenhet, projekt, utbildning och tekniska kompetenser.",
+    en: "Want to know more about my experience? Here you’ll find my full CV with work history, projects, education, and technical skills.",
+  },
+  viewCvLabel: { sv: "Visa CV", en: "View CV" },
+  downloadLabel: { sv: "Ladda ner CV", en: "Download CV" },
+  overlayCloseAria: { sv: "Stäng CV-förhandsvisning", en: "Close CV preview" },
+  pdfLoading: { sv: "Laddar CV…", en: "Loading CV…" },
+  pdfError: {
+    sv: "Kunde inte visa CV i webbläsaren.",
+    en: "Could not display the CV in the browser.",
+  },
+  openPdfInTab: { sv: "Öppna PDF i ny flik", en: "Open PDF in a new tab" },
+  competencyAreas: [
+    {
+      icon: "assets/svg/system_architecture.svg",
+      title: {
+        sv: "Systemarkitektur och affärslogik",
+        en: "System architecture & business logic",
+      },
+      description: {
+        sv: "Utformar och förbättrar systemstrukturer med fokus på tydliga datamodeller, centraliserad affärslogik och kod som är enkel att underhålla och vidareutveckla.",
+        en: "Designs and improves system structures with clear data models, centralised business logic, and code that is easy to maintain and extend.",
+      },
+    },
+    {
+      icon: "assets/svg/platform_specific_development.svg",
+      title: {
+        sv: "Plattformsspecifik utveckling",
+        en: "Platform-specific development",
+      },
+      description: {
+        sv: "Utvecklar för iOS och Android med fokus på native-integrationer, pushnotiser, bakgrundsprocesser och konsekvent beteende mellan plattformarna.",
+        en: "Builds for iOS and Android with a focus on native integrations, push notifications, background work, and consistent behaviour across platforms.",
+      },
+    },
+    {
+      icon: "assets/svg/data_integrity_and_synchronization.svg",
+      title: {
+        sv: "Dataintegritet och synkronisering",
+        en: "Data integrity & synchronisation",
+      },
+      description: {
+        sv: "Arbetar med lokal datalagring, databastransaktioner och synkroniseringsflöden för tillförlitlig datahantering även vid instabil uppkoppling.",
+        en: "Works with local storage, database transactions, and sync flows for reliable data handling even on unstable connections.",
+      },
+    },
+    {
+      icon: "assets/svg/debugging_and_quality_assurance.svg",
+      title: {
+        sv: "Felsökning och kvalitetssäkring",
+        en: "Debugging & quality assurance",
+      },
+      description: {
+        sv: "Analyserar komplexa problem, identifierar grundorsaker och förbättrar stabilitet, prestanda och testbarhet i befintliga system.",
+        en: "Analyses complex issues, finds root causes, and improves stability, performance, and testability in existing systems.",
+      },
+    },
+    {
+      icon: "assets/svg/product_development_and_ux.svg",
+      title: {
+        sv: "Produktutveckling och UX",
+        en: "Product development & UX",
+      },
+      description: {
+        sv: "Kombinerar teknisk utveckling med erfarenhet av kravanalys, prototyper, användartester och användarcentrerad design.",
+        en: "Combines engineering with requirements analysis, prototyping, user testing, and user-centred design.",
+      },
+    },
+  ],
   files: {
     sv: "assets/documents/agnes_sandberg_cv_sv.pdf",
     en: "assets/documents/agnes_sandberg_cv_en.pdf",
@@ -315,7 +425,14 @@ export const PROJECTS = [
         "Collaboration on integrating 3D content into user flows.",
       ],
     },
-    stores: {},
+    stores: {
+      website: "https://www.speedbox.eu",
+      websiteBadge: "assets/icons/badge_speedbox_website.svg",
+      websiteLabel: {
+        sv: "Besök Speedbox officiella webbplats",
+        en: "Visit the official Speedbox website",
+      },
+    },
     caseStudy: null,
   },
   {

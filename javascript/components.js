@@ -1,6 +1,7 @@
 import { resolveAssetPath } from "./assets.js";
 import { ICONS } from "./content.js";
 import { getLocale, pickLocalized } from "./i18n.js";
+import { CASE_STUDY_SUBNAV, UI } from "./content.js";
 
 function escapeHtml(text) {
   return String(text)
@@ -10,16 +11,40 @@ function escapeHtml(text) {
     .replace(/"/g, "&quot;");
 }
 
-export function renderLangSwitch(base, locale, variant = "short") {
+/**
+ * @param {string} base
+ * @param {string} locale
+ * @param {"short" | "long" | { variant?: "short" | "long"; figma?: boolean }} variantOrOptions
+ */
+export function renderLangSwitch(base, locale, variantOrOptions = "short") {
+  const options =
+    typeof variantOrOptions === "string"
+      ? { variant: variantOrOptions, figma: variantOrOptions === "long" }
+      : {
+          variant: variantOrOptions.variant ?? "short",
+          figma: Boolean(variantOrOptions.figma),
+        };
   const labels =
-    variant === "long"
+    options.variant === "long"
       ? { en: "English", sv: "Swedish" }
       : { en: "En", sv: "Sv" };
+  const aria = pickLocalized(UI.langSwitchAria, locale);
+  const mod = options.figma ? " lang-switch--figma" : "";
   return `
-    <div class="lang-switch" data-lang-switch role="group" aria-label="Language">
+    <div class="lang-switch${mod}" data-lang-switch data-lang-switch-variant="${options.variant}" role="group" aria-label="${escapeHtml(aria)}">
       <button type="button" class="lang-switch__btn${locale === "en" ? " is-active" : ""}" data-lang="en">${labels.en}</button>
       <span class="lang-switch__sep">/</span>
       <button type="button" class="lang-switch__btn${locale === "sv" ? " is-active" : ""}" data-lang="sv">${labels.sv}</button>
+    </div>`;
+}
+
+/** Figma header: språkrad med samma maxbredd och beteende på alla sidor. */
+export function renderSiteLangChrome(base, locale) {
+  return `
+    <div class="site-chrome__lang site-chrome__lang--figma-after" data-component="site-lang">
+      <div class="site-chrome__lang-inner">
+        ${renderLangSwitch(base, locale, { variant: "long", figma: true })}
+      </div>
     </div>`;
 }
 
@@ -92,9 +117,9 @@ export function renderContactRow(contact, base) {
     </div>`;
 }
 
-export function renderStoreBadges(project, base) {
+export function renderStoreBadges(project, base, locale = getLocale()) {
   const { stores } = project;
-  if (!stores?.appStore && !stores?.playStore) return "";
+  if (!stores?.appStore && !stores?.playStore && !stores?.website) return "";
   const parts = [];
   if (stores.playStore) {
     parts.push(
@@ -109,6 +134,21 @@ export function renderStoreBadges(project, base) {
         <img src="${resolveAssetPath(base, ICONS.appStore)}" alt="App Store" width="120" height="36" loading="lazy">
       </a>`,
     );
+  }
+  if (stores.website) {
+    const alt = escapeHtml(
+      pickLocalized(stores.websiteLabel, locale) || "speedbox.eu",
+    );
+    const badgeSrc = stores.websiteBadge
+      ? resolveAssetPath(base, stores.websiteBadge)
+      : "";
+    if (badgeSrc) {
+      parts.push(
+        `<a href="${escapeHtml(stores.website)}" rel="noopener noreferrer" class="store-badge">
+          <img src="${escapeHtml(badgeSrc)}" alt="${alt}" width="120" height="36" loading="lazy">
+        </a>`,
+      );
+    }
   }
   return `<div class="store-badges">${parts.join("")}</div>`;
 }
@@ -137,7 +177,7 @@ export function renderProjectPanel(project, base, locale = getLocale()) {
     : "";
 
   const caseLink = caseHref
-    ? `<p class="project-panel__case"><a href="${caseHref}">${locale === "sv" ? "Case study" : "Case study"} →</a></p>`
+    ? `<p class="project-panel__case"><a href="${caseHref}">${escapeHtml(pickLocalized(UI.caseStudyLink, locale))} →</a></p>`
     : "";
 
   const tagsHtml = renderTags(project.tags, "tag-list tag-list--project");
@@ -175,17 +215,42 @@ export function renderProjectPanel(project, base, locale = getLocale()) {
     </article>`;
 }
 
+export function renderCvCompetencyCards(areas, base, locale = getLocale()) {
+  if (!areas?.length) return "";
+  return areas
+    .map((item) => {
+      const title = pickLocalized(item.title, locale);
+      const description = pickLocalized(item.description, locale);
+      const iconSrc = resolveAssetPath(base, item.icon);
+      return `<article class="cv-area-card">
+        <span class="cv-area-card__glyph" aria-hidden="true">
+          <img class="cv-area-card__glyph-icon" src="${iconSrc}" alt="" width="22" height="22" loading="lazy" decoding="async">
+        </span>
+        <h3 class="cv-area-card__title">${escapeHtml(title)}</h3>
+        <p class="cv-area-card__text">${escapeHtml(description)}</p>
+      </article>`;
+    })
+    .join("");
+}
+
 export function renderHighlights(items) {
   if (!items?.length) return "";
   const lis = items.map((item) => `<li>${escapeHtml(item)}</li>`).join("");
   return `<ul class="highlight-list">${lis}</ul>`;
 }
 
-export function renderCarousel(images, base, carouselId = "project-carousel") {
+export function renderCarousel(
+  images,
+  base,
+  carouselId = "project-carousel",
+  locale = getLocale(),
+) {
   const slides = images ?? [];
   if (!slides.length) {
-    return `<p class="muted">Bilder kommer snart.</p>`;
+    return `<p class="muted">${locale === "sv" ? "Bilder kommer snart." : "Images coming soon."}</p>`;
   }
+
+  const slideWord = pickLocalized(UI.carouselSlideLabel, locale);
 
   const slideHtml = slides
     .map(
@@ -199,9 +264,12 @@ export function renderCarousel(images, base, carouselId = "project-carousel") {
   const dots = slides
     .map(
       (_, index) =>
-        `<button type="button" class="carousel__dot${index === 0 ? " is-active" : ""}" data-carousel-target="${carouselId}" data-index="${index}" aria-label="Bild ${index + 1}"></button>`,
+        `<button type="button" class="carousel__dot${index === 0 ? " is-active" : ""}" data-carousel-target="${carouselId}" data-index="${index}" aria-label="${escapeHtml(slideWord)} ${index + 1}"></button>`,
     )
     .join("");
+
+  const prev = escapeHtml(pickLocalized(UI.carouselPrev, locale));
+  const next = escapeHtml(pickLocalized(UI.carouselNext, locale));
 
   return `
     <div class="carousel" id="${carouselId}" data-carousel>
@@ -209,33 +277,31 @@ export function renderCarousel(images, base, carouselId = "project-carousel") {
       ${
         slides.length > 1
           ? `<div class="carousel__controls">
-        <button type="button" class="carousel__btn carousel__btn--prev" data-carousel-target="${carouselId}" aria-label="Föregående">‹</button>
+        <button type="button" class="carousel__btn carousel__btn--prev" data-carousel-target="${carouselId}" aria-label="${prev}">‹</button>
         <div class="carousel__dots">${dots}</div>
-        <button type="button" class="carousel__btn carousel__btn--next" data-carousel-target="${carouselId}" aria-label="Nästa">›</button>
+        <button type="button" class="carousel__btn carousel__btn--next" data-carousel-target="${carouselId}" aria-label="${next}">›</button>
       </div>`
           : ""
       }
     </div>`;
 }
 
-export function renderProjectSubnav(sectionIds) {
-  const items = [
-    { id: "overview", label: "Overview" },
-    { id: "contribution", label: "My contribution" },
-    { id: "challenges", label: "Technical challenges" },
-    { id: "architecture", label: "Architecture & implementation" },
-    { id: "results", label: "Results & learnings" },
-  ].filter((item) => !sectionIds || sectionIds.includes(item.id));
+export function renderProjectSubnav(sectionIds, locale = getLocale()) {
+  const items = CASE_STUDY_SUBNAV.filter(
+    (item) => !sectionIds || sectionIds.includes(item.id),
+  );
 
   const links = items
     .map(
       (item) =>
-        `<a class="project-subnav__link" href="#${item.id}" data-subnav-link="${item.id}">${item.label}</a>`,
+        `<a class="project-subnav__link" href="#${item.id}" data-subnav-link="${item.id}">${escapeHtml(pickLocalized(item.label, locale))}</a>`,
     )
     .join("");
 
+  const subnavAria = escapeHtml(pickLocalized(UI.projectSubnavAria, locale));
+
   return `
-    <nav class="project-subnav" aria-label="Projektsektioner" data-project-subnav>
+    <nav class="project-subnav" aria-label="${subnavAria}" data-project-subnav>
       <div class="page-wrap project-subnav__inner">${links}</div>
     </nav>`;
 }

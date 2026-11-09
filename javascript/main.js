@@ -3,6 +3,9 @@ import {
   ABOUT,
   CV,
   CONTACT,
+  ICONS,
+  SITE,
+  UI,
   getVisibleProjects,
   getProjectViewModel,
 } from "./content.js";
@@ -17,8 +20,15 @@ import {
   renderHighlights,
   renderTags,
   renderStoreBadges,
+  renderCvCompetencyCards,
 } from "./components.js";
 import { resolveAssetPath } from "./assets.js";
+import {
+  initCvOverlay,
+  refreshCvOverlayIfOpen,
+  syncCvDownloads,
+} from "./cv-overlay.js";
+import { renderCvPdfThumbnail, cancelCvPdfThumbnail } from "./cv-pdf.js";
 
 function initMobileNav() {
   const toggle = document.querySelector(".site-nav__toggle");
@@ -43,11 +53,14 @@ function initLanguageSwitch() {
     root.querySelectorAll("[data-lang]").forEach((btn) => {
       btn.addEventListener("click", () => {
         const next = btn.dataset.lang;
+        if (next === getLocale()) return;
         setLocale(next);
-        root.querySelectorAll("[data-lang]").forEach((peer) => {
-          peer.classList.toggle("is-active", peer.dataset.lang === next);
+        document.querySelectorAll("[data-lang-switch]").forEach((group) => {
+          group.querySelectorAll("[data-lang]").forEach((peer) => {
+            peer.classList.toggle("is-active", peer.dataset.lang === next);
+          });
         });
-        refreshContent();
+        refreshContent({ animate: true });
       });
     });
   });
@@ -126,6 +139,38 @@ function initProjectSubnav() {
   });
 }
 
+function updateLocalizedUi() {
+  const locale = getLocale();
+  const page = document.body?.dataset?.page;
+
+  const skip = document.querySelector('.visually-hidden[href="#main"]');
+  if (skip) {
+    skip.textContent = pickLocalized(UI.skipToContent, locale);
+  }
+
+  if (page && UI.pageTitle[page]) {
+    document.title = `${pickLocalized(UI.pageTitle[page], locale)} | ${SITE.name}`;
+  }
+
+  document.querySelectorAll('[data-i18n="site-title"]').forEach((el) => {
+    el.textContent = pickLocalized(SITE.title, locale);
+  });
+
+  const nav = document.querySelector("#primary-nav-panel");
+  if (nav) {
+    nav.setAttribute("aria-label", pickLocalized(UI.mainNavAria, locale));
+  }
+
+  document.querySelectorAll("[data-lang-switch]").forEach((root) => {
+    root.setAttribute("aria-label", pickLocalized(UI.langSwitchAria, locale));
+  });
+
+  const subnav = document.querySelector("[data-project-subnav]");
+  if (subnav) {
+    subnav.setAttribute("aria-label", pickLocalized(UI.projectSubnavAria, locale));
+  }
+}
+
 function renderAboutPage() {
   const locale = getLocale();
   const base = getBase();
@@ -188,23 +233,44 @@ function renderProjectsPage() {
 function renderCvPage() {
   const locale = getLocale();
   const base = getBase();
-  const preview = document.querySelector("[data-cv-preview]");
-  const download = document.querySelector("[data-cv-download]");
-  const label = document.querySelector("[data-cv-download-label]");
-
+  const areasHeading = document.querySelector("[data-cv-areas-heading]");
+  const areasGrid = document.querySelector("[data-cv-areas-grid]");
+  const resumeHeading = document.querySelector("[data-cv-resume-heading]");
+  const resumeIntro = document.querySelector("[data-cv-resume-intro]");
+  const thumbnailBtn = document.querySelector("[data-cv-thumbnail]");
+  const thumbnailMount = document.querySelector("[data-cv-thumbnail-mount]");
+  const downloadIcon = document.querySelector("[data-cv-download-icon]");
   const pdfPath = CV.preview[locale] ?? CV.preview.sv;
-  const filePath = CV.files[locale] ?? CV.files.sv;
 
-  if (preview) {
-    preview.src = resolveAssetPath(base, pdfPath);
+  if (areasHeading) {
+    areasHeading.textContent = pickLocalized(CV.areasHeading, locale);
   }
-  if (download) {
-    download.href = resolveAssetPath(base, filePath);
-    download.setAttribute("download", "");
+  if (areasGrid) {
+    areasGrid.innerHTML = renderCvCompetencyCards(CV.competencyAreas, base, locale);
   }
-  if (label) {
-    label.textContent = pickLocalized(CV.downloadLabel, locale);
+  if (resumeHeading) {
+    resumeHeading.textContent = pickLocalized(CV.resumeHeading, locale);
   }
+  if (resumeIntro) {
+    resumeIntro.textContent = pickLocalized(CV.resumeIntro, locale);
+  }
+  const viewLabel = pickLocalized(CV.viewCvLabel, locale);
+  if (thumbnailBtn) {
+    thumbnailBtn.setAttribute("aria-label", viewLabel);
+  }
+  if (thumbnailMount) {
+    cancelCvPdfThumbnail();
+    renderCvPdfThumbnail(thumbnailMount, resolveAssetPath(base, pdfPath), {
+      loadingText: pickLocalized(CV.pdfLoading, locale),
+      maxWidth: window.matchMedia("(min-width: 900px)").matches ? 321 : 280,
+    });
+  }
+
+  syncCvDownloads(base, locale);
+  if (downloadIcon) {
+    downloadIcon.src = resolveAssetPath(base, ICONS.download);
+  }
+  refreshCvOverlayIfOpen();
 }
 
 function renderVikingCaseStudy() {
@@ -215,7 +281,7 @@ function renderVikingCaseStudy() {
 
   const subnavMount = document.querySelector("[data-viking-subnav]");
   if (subnavMount) {
-    subnavMount.outerHTML = renderProjectSubnav();
+    subnavMount.outerHTML = renderProjectSubnav(undefined, locale);
   }
 
   const carouselMount = document.querySelector("[data-viking-carousel]");
@@ -224,6 +290,7 @@ function renderVikingCaseStudy() {
       project.caseStudyImages,
       base,
       "viking-carousel",
+      locale,
     );
   }
 
@@ -249,19 +316,38 @@ function escapeHtml(text) {
     .replace(/"/g, "&quot;");
 }
 
-function refreshContent() {
-  mountLayout();
-  initMobileNav();
-  initLanguageSwitch();
-  renderAboutPage();
-  renderProjectsPage();
-  renderCvPage();
-  renderVikingCaseStudy();
-  initCarousels();
-  initProjectSubnav();
+function refreshContent({ animate = false } = {}) {
+  const apply = () => {
+    mountLayout();
+    initMobileNav();
+    initLanguageSwitch();
+    renderAboutPage();
+    renderProjectsPage();
+    renderCvPage();
+    renderVikingCaseStudy();
+    updateLocalizedUi();
+    initCarousels();
+    initProjectSubnav();
+  };
+
+  const main = document.querySelector(".page-main");
+  if (animate && main && typeof document.startViewTransition === "function") {
+    main.classList.add("is-view-transitioning");
+    const transition = document.startViewTransition(apply);
+    transition.finished.finally(() => {
+      main.classList.remove("is-view-transitioning");
+    });
+    return;
+  }
+
+  apply();
 }
 
 document.addEventListener("DOMContentLoaded", () => {
   setLocale(getLocale());
+  initCvOverlay();
   refreshContent();
+  requestAnimationFrame(() => {
+    document.body.classList.add("is-content-ready");
+  });
 });

@@ -1,7 +1,7 @@
-import { SITE, CONTACT, ICONS } from "./content.js";
+import { SITE, CONTACT, ICONS, UI } from "./content.js";
 import { resolveAssetPath } from "./assets.js";
 import { getLocale, pickLocalized } from "./i18n.js";
-import { renderLangSwitch } from "./components.js";
+import { renderLangSwitch, renderSiteLangChrome } from "./components.js";
 
 function getBase() {
   return document.documentElement.dataset.base ?? "./";
@@ -94,13 +94,11 @@ function renderFigmaChrome() {
             <span class="site-nav__toggle-bar" aria-hidden="true"></span>
           </button>
         </div>
-        <nav id="primary-nav-panel" class="primary-nav primary-nav--figma page-wrap" aria-label="Huvudnavigering">
+        <nav id="primary-nav-panel" class="primary-nav primary-nav--figma page-wrap" aria-label="${escapeHtml(pickLocalized(UI.mainNavAria, locale))}">
           ${renderPrimaryNav(active, locale, base)}
         </nav>
       </div>
-      <div class="page-wrap site-chrome__lang site-chrome__lang--figma-after">
-        ${renderLangSwitch(base, locale, "long")}
-      </div>
+      ${renderSiteLangChrome(base, locale)}
     </header>`;
 }
 
@@ -126,7 +124,7 @@ function renderDefaultChrome() {
           <span class="site-nav__toggle-bar" aria-hidden="true"></span>
         </button>
       </div>
-      <nav id="primary-nav-panel" class="primary-nav page-wrap" aria-label="Huvudnavigering">
+      <nav id="primary-nav-panel" class="primary-nav page-wrap" aria-label="${escapeHtml(pickLocalized(UI.mainNavAria, locale))}">
         ${renderPrimaryNav(active, locale, base)}
       </nav>
     </header>`;
