@@ -1,7 +1,7 @@
 import { SITE, CONTACT, ICONS, UI } from "./content.js";
 import { resolveAssetPath } from "./assets.js";
 import { getLocale, pickLocalized } from "./i18n.js";
-import { renderLangSwitch, renderSiteLangChrome } from "./components.js";
+import { renderLangSwitch, renderWebPageHeader } from "./components.js";
 
 function getBase() {
   return document.documentElement.dataset.base ?? "./";
@@ -68,38 +68,12 @@ function escapeHtml(text) {
 }
 
 function renderFigmaChrome() {
-  const base = getBase();
-  const locale = getLocale();
-  const active = currentPageId();
-  const title = pickLocalized(SITE.title, locale);
-  const [firstName, ...restName] = SITE.name.split(" ");
-  const lastName = restName.join(" ");
-
-  return `
-    <header class="site-chrome site-chrome--figma" data-component="site-header">
-      <div class="site-chrome__band">
-        <div class="page-wrap site-chrome__top site-chrome__top--figma">
-          <div class="site-brand site-brand--figma">
-            <a class="site-brand__link" href="${resolveHref("about.html")}">
-              <span class="site-brand__name site-brand__name--split">
-                <span class="site-brand__name-part">${escapeHtml(firstName)}</span>
-                <span class="site-brand__name-part">${escapeHtml(lastName)}</span>
-              </span>
-              <span class="site-brand__title" data-i18n="site-title">${escapeHtml(title)}</span>
-            </a>
-          </div>
-          <button type="button" class="site-nav__toggle" aria-expanded="false" aria-controls="primary-nav-panel">
-            <span class="visually-hidden">Meny</span>
-            <span class="site-nav__toggle-bar" aria-hidden="true"></span>
-            <span class="site-nav__toggle-bar" aria-hidden="true"></span>
-          </button>
-        </div>
-        <nav id="primary-nav-panel" class="primary-nav primary-nav--figma page-wrap" aria-label="${escapeHtml(pickLocalized(UI.mainNavAria, locale))}">
-          ${renderPrimaryNav(active, locale, base)}
-        </nav>
-      </div>
-      ${renderSiteLangChrome(base, locale)}
-    </header>`;
+  return renderWebPageHeader({
+    base: getBase(),
+    locale: getLocale(),
+    active: currentPageId(),
+    resolveHref,
+  });
 }
 
 function renderDefaultChrome() {
@@ -117,7 +91,7 @@ function renderDefaultChrome() {
             <span class="site-brand__title" data-i18n="site-title">${escapeHtml(title)}</span>
           </a>
         </div>
-        <div class="site-chrome__lang">${renderLangSwitch(base, locale)}</div>
+        <div class="site-chrome__lang">${renderLangSwitch(base, locale, "short")}</div>
         <button type="button" class="site-nav__toggle" aria-expanded="false" aria-controls="primary-nav-panel">
           <span class="visually-hidden">Meny</span>
           <span class="site-nav__toggle-bar" aria-hidden="true"></span>
@@ -147,7 +121,7 @@ function renderSiteFooter() {
     <footer class="site-footer" data-component="site-footer">
       <div class="page-wrap site-footer__inner">
         <p class="site-footer__copy">© ${year} ${escapeHtml(SITE.name)}. ${escapeHtml(rights)}</p>
-        ${showLangInFooter ? renderLangSwitch(base, locale) : ""}
+        ${showLangInFooter ? renderLangSwitch(base, locale, "short") : ""}
       </div>
     </footer>`;
 }

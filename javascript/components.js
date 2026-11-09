@@ -1,7 +1,6 @@
 import { resolveAssetPath } from "./assets.js";
-import { ICONS } from "./content.js";
+import { CASE_STUDY_SUBNAV, ICONS, SITE, UI } from "./content.js";
 import { getLocale, pickLocalized } from "./i18n.js";
-import { CASE_STUDY_SUBNAV, UI } from "./content.js";
 
 function escapeHtml(text) {
   return String(text)
@@ -11,41 +10,103 @@ function escapeHtml(text) {
     .replace(/"/g, "&quot;");
 }
 
+function langSwitchButton(locale, lang, labels) {
+  const isActive = locale === lang;
+  return `<button type="button" class="lang-switch__btn${isActive ? " is-active" : ""}" data-lang="${lang}" aria-pressed="${isActive ? "true" : "false"}">
+      <span class="lang-switch__label lang-switch__label--full">${escapeHtml(labels.full)}</span>
+      <span class="lang-switch__label lang-switch__label--abbr">${escapeHtml(labels.abbr)}</span>
+    </button>`;
+}
+
 /**
- * @param {string} base
- * @param {string} locale
- * @param {"short" | "long" | { variant?: "short" | "long"; figma?: boolean }} variantOrOptions
+ * Shared language toggle. Figma-header uses CSS to switch full/abbr labels
+ * at the same breakpoint as web-page-header (no separate markup per page).
  */
-export function renderLangSwitch(base, locale, variantOrOptions = "short") {
-  const options =
-    typeof variantOrOptions === "string"
-      ? { variant: variantOrOptions, figma: variantOrOptions === "long" }
-      : {
-          variant: variantOrOptions.variant ?? "short",
-          figma: Boolean(variantOrOptions.figma),
-        };
-  const labels =
-    options.variant === "long"
-      ? { en: "English", sv: "Swedish" }
-      : { en: "En", sv: "Sv" };
+export function renderLangSwitch(base, locale, variant = "figma") {
   const aria = pickLocalized(UI.langSwitchAria, locale);
-  const mod = options.figma ? " lang-switch--figma" : "";
-  return `
-    <div class="lang-switch${mod}" data-lang-switch data-lang-switch-variant="${options.variant}" role="group" aria-label="${escapeHtml(aria)}">
+  if (variant !== "figma") {
+    const labels = { en: "En", sv: "Sv" };
+    return `
+    <div class="lang-switch" data-lang-switch role="group" aria-label="${escapeHtml(aria)}">
       <button type="button" class="lang-switch__btn${locale === "en" ? " is-active" : ""}" data-lang="en">${labels.en}</button>
       <span class="lang-switch__sep">/</span>
       <button type="button" class="lang-switch__btn${locale === "sv" ? " is-active" : ""}" data-lang="sv">${labels.sv}</button>
     </div>`;
+  }
+
+  return `
+    <div class="lang-switch lang-switch--figma" data-lang-switch role="group" aria-label="${escapeHtml(aria)}">
+      ${langSwitchButton(locale, "sv", SITE.lang.sv)}
+      <span class="lang-switch__sep">/</span>
+      ${langSwitchButton(locale, "en", SITE.lang.en)}
+    </div>`;
 }
 
-/** Figma header: språkrad med samma maxbredd och beteende på alla sidor. */
-export function renderSiteLangChrome(base, locale) {
+function renderHeaderTabs(active, locale, resolveHref) {
+  const items = [
+    { id: "about", ...SITE.nav.about },
+    { id: "projects", ...SITE.nav.projects },
+    { id: "cv", ...SITE.nav.cv },
+  ];
+
+  return items
+    .map((item) => {
+      const label = pickLocalized(item, locale);
+      const isActive = active === item.id;
+      return `
+        <a class="web-page-header__tab${isActive ? " is-active" : ""}"
+           href="${resolveHref(item.href)}"
+           ${isActive ? 'aria-current="page"' : ""}>
+          <span class="web-page-header__tab-label">${escapeHtml(label)}</span>
+          <span class="web-page-header__tab-indicator" aria-hidden="true"></span>
+        </a>`;
+    })
+    .join("");
+}
+
+/**
+ * Shared site header (Figma `web-page-header`). Used on every themed HTML page.
+ * Copy and links come from `SITE` in content.js.
+ */
+export function renderWebPageHeader({ base, locale, active, resolveHref }) {
+  const title = pickLocalized(SITE.title, locale);
+  const emailLabel = pickLocalized(SITE.nav.email, locale);
+  const [firstName, ...restName] = SITE.name.split(" ");
+  const lastName = restName.join(" ");
+  const emailHref = SITE.nav.email.href;
+
   return `
-    <div class="site-chrome__lang site-chrome__lang--figma-after" data-component="site-lang">
-      <div class="site-chrome__lang-inner">
-        ${renderLangSwitch(base, locale, { variant: "long", figma: true })}
+    <header class="web-page-header site-chrome site-chrome--figma" data-component="site-header">
+      <div class="web-page-header__band">
+        <div class="web-page-header__inner">
+          <div class="web-page-header__title-row">
+            <div class="web-page-header__brand">
+              <a class="web-page-header__brand-link" href="${resolveHref("about.html")}">
+                <span class="web-page-header__name">
+                  <span class="web-page-header__name-part">${escapeHtml(firstName)}</span>
+                  <span class="web-page-header__name-part">${escapeHtml(lastName)}</span>
+                </span>
+                <span class="web-page-header__role" data-i18n="site-title">${escapeHtml(title)}</span>
+              </a>
+            </div>
+            <div class="web-page-header__lead">
+              <a class="web-page-header__email" href="${emailHref}" aria-label="${escapeHtml(emailLabel)}">
+                <img class="web-page-header__email-icon" src="${resolveAssetPath(base, ICONS.email)}" alt="" width="22" height="22">
+                <span class="web-page-header__email-label">${escapeHtml(emailLabel)}</span>
+              </a>
+            </div>
+          </div>
+          <div class="web-page-header__nav-row">
+            <nav id="primary-nav-panel" class="web-page-header__tabs" aria-label="${escapeHtml(pickLocalized(UI.mainNavAria, locale))}">
+              ${renderHeaderTabs(active, locale, resolveHref)}
+            </nav>
+            <div class="web-page-header__trailing">
+              ${renderLangSwitch(base, locale, "figma")}
+            </div>
+          </div>
+        </div>
       </div>
-    </div>`;
+    </header>`;
 }
 
 export function renderTags(tags, className = "tag-list") {

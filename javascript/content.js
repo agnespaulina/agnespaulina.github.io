@@ -16,6 +16,10 @@ export const ICONS = {
   googlePlay: "assets/icons/icon_downloadGooglePlay.svg",
 };
 
+/**
+ * Site chrome (web-page-header). Edit here to update the header on every page.
+ * Tabs: `nav`. Identity: `name` + `title`. Mail: `nav.email`. Language: `lang`.
+ */
 export const SITE = {
   name: "Agnes Sandberg",
   title: {
@@ -25,6 +29,10 @@ export const SITE = {
   footer: {
     sv: "All rights reserved.",
     en: "All rights reserved.",
+  },
+  lang: {
+    en: { full: "English", abbr: "En" },
+    sv: { full: "Swedish", abbr: "Sv" },
   },
   nav: {
     about: { sv: "Om mig", en: "About", href: "about.html" },
