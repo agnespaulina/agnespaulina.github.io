@@ -211,6 +211,22 @@ function renderProjectsPage() {
   mount.innerHTML = getVisibleProjects()
     .map((p) => renderProjectPanel(p, base, locale))
     .join("");
+
+  // Mobile: tapping the pinned project header scrolls back to the top of that card.
+  if (!mount.dataset.scrollTopBound) {
+    mount.dataset.scrollTopBound = "true";
+    mount.addEventListener("click", (event) => {
+      const head = event.target.closest(".project-card__head");
+      if (!head || window.matchMedia("(min-width: 900px)").matches) return;
+      const reduceMotion = window.matchMedia(
+        "(prefers-reduced-motion: reduce)",
+      ).matches;
+      head.closest(".project-card")?.scrollIntoView({
+        behavior: reduceMotion ? "auto" : "smooth",
+        block: "start",
+      });
+    });
+  }
 }
 
 function renderCvPage() {

@@ -1569,6 +1569,16 @@ body.site-theme-figma[data-page="about"] .page-main { padding-block: 2.5rem; }
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  /* Mobile: the project name stays pinned while the card content scrolls beneath it */
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  align-self: start;
+  margin: -0.75rem -0.75rem 0;
+  padding: 0.75rem;
+  background: #fff;
+  border-radius: var(--card-radius) var(--card-radius) 0 0;
+  cursor: pointer;
 }
 .project-card__logo {
   width: 2.8125rem;
@@ -1785,6 +1795,14 @@ body.site-theme-figma[data-page="cv"] .page-main { padding-block: 2.5rem; }
   }
   .project-card__title {
     font-size: 1.875rem;
+  }
+  .project-card__head {
+    position: static;
+    cursor: auto;
+    margin: 0;
+    padding: 0;
+    box-shadow: none;
+    border-radius: 0;
   }
   .project-card__period {
     font-size: 0.875rem;
