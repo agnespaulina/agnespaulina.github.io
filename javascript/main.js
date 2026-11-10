@@ -7,17 +7,11 @@ import {
   SITE,
   UI,
   getVisibleProjects,
-  getProjectViewModel,
 } from "./content.js";
 import { getLocale, setLocale, pickLocalized } from "./i18n.js";
 import {
   renderProjectPanel,
   renderContactRow,
-  renderCarousel,
-  renderProjectSubnav,
-  renderHighlights,
-  renderTags,
-  renderStoreBadges,
   renderCvCompetencyCards,
 } from "./components.js";
 import { resolveAssetPath } from "./assets.js";
@@ -27,24 +21,6 @@ import {
   syncCvDownloads,
 } from "./cv-overlay.js";
 import { prefetchCvPdf } from "./cv-pdf.js";
-
-function initMobileNav() {
-  const toggle = document.querySelector(".site-nav__toggle");
-  const nav = document.querySelector(".primary-nav");
-  if (!toggle || !nav) return;
-
-  toggle.addEventListener("click", () => {
-    const open = nav.classList.toggle("is-open");
-    toggle.setAttribute("aria-expanded", open ? "true" : "false");
-  });
-
-  nav.querySelectorAll("a").forEach((link) => {
-    link.addEventListener("click", () => {
-      nav.classList.remove("is-open");
-      toggle.setAttribute("aria-expanded", "false");
-    });
-  });
-}
 
 function initLanguageSwitch() {
   document.querySelectorAll("[data-lang-switch]").forEach((root) => {
@@ -64,79 +40,6 @@ function initLanguageSwitch() {
   });
 }
 
-function initCarousels() {
-  document.querySelectorAll("[data-carousel]").forEach((root) => {
-    const slides = [...root.querySelectorAll(".carousel__slide")];
-    if (slides.length <= 1) return;
-
-    let index = slides.findIndex((s) => s.classList.contains("is-active"));
-    if (index < 0) index = 0;
-
-    const dots = [...root.querySelectorAll(".carousel__dot")];
-
-    const show = (next) => {
-      index = (next + slides.length) % slides.length;
-      slides.forEach((slide, i) => {
-        slide.classList.toggle("is-active", i === index);
-      });
-      dots.forEach((dot, i) => {
-        dot.classList.toggle("is-active", i === index);
-      });
-    };
-
-    root.querySelector(".carousel__btn--prev")?.addEventListener("click", () => {
-      show(index - 1);
-    });
-    root.querySelector(".carousel__btn--next")?.addEventListener("click", () => {
-      show(index + 1);
-    });
-    dots.forEach((dot) => {
-      dot.addEventListener("click", () => {
-        show(Number(dot.dataset.index));
-      });
-    });
-  });
-}
-
-function initProjectSubnav() {
-  const subnav = document.querySelector("[data-project-subnav]");
-  if (!subnav) return;
-
-  const links = [...subnav.querySelectorAll("[data-subnav-link]")];
-  const sections = links
-    .map((link) => document.getElementById(link.dataset.subnavLink))
-    .filter(Boolean);
-
-  if (!sections.length) return;
-
-  const observer = new IntersectionObserver(
-    (entries) => {
-      const visible = entries
-        .filter((e) => e.isIntersecting)
-        .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-      if (!visible) return;
-      const id = visible.target.id;
-      links.forEach((link) => {
-        link.classList.toggle("is-active", link.dataset.subnavLink === id);
-      });
-    },
-    { rootMargin: "-40% 0px -45% 0px", threshold: [0, 0.25, 0.5] },
-  );
-
-  sections.forEach((section) => observer.observe(section));
-
-  links.forEach((link) => {
-    link.addEventListener("click", (event) => {
-      event.preventDefault();
-      document.getElementById(link.dataset.subnavLink)?.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
-      });
-      history.replaceState(null, "", `#${link.dataset.subnavLink}`);
-    });
-  });
-}
-
 function updateLocalizedUi() {
   const locale = getLocale();
   const page = document.body?.dataset?.page;
@@ -150,10 +53,6 @@ function updateLocalizedUi() {
     document.title = `${pickLocalized(UI.pageTitle[page], locale)} | ${SITE.name}`;
   }
 
-  document.querySelectorAll('[data-i18n="site-title"]').forEach((el) => {
-    el.textContent = pickLocalized(SITE.title, locale);
-  });
-
   const nav = document.querySelector("#primary-nav-panel");
   if (nav) {
     nav.setAttribute("aria-label", pickLocalized(UI.mainNavAria, locale));
@@ -162,11 +61,6 @@ function updateLocalizedUi() {
   document.querySelectorAll("[data-lang-switch]").forEach((root) => {
     root.setAttribute("aria-label", pickLocalized(UI.langSwitchAria, locale));
   });
-
-  const subnav = document.querySelector("[data-project-subnav]");
-  if (subnav) {
-    subnav.setAttribute("aria-label", pickLocalized(UI.projectSubnavAria, locale));
-  }
 }
 
 function renderAboutPage() {
@@ -211,6 +105,51 @@ function renderProjectsPage() {
   mount.innerHTML = getVisibleProjects()
     .map((p) => renderProjectPanel(p, base, locale))
     .join("");
+  // Re-measure the cards (clip variables) after every render.
+  requestAnimationFrame(() => window.dispatchEvent(new Event("resize")));
+
+  // Mobile: mark the project header that is currently pinned (styles the card edge + top cover).
+  if (!mount.dataset.stuckBound) {
+    mount.dataset.stuckBound = "true";
+    const heads = () => mount.querySelectorAll(".project-card__head");
+    // The pinned header's position is computed from the card (never read from the sticky
+    // element itself): iOS moves sticky elements on the compositor, so their measured
+    // position can lag behind what is on screen.
+    // Resolve --stick-top (a calc() with env()) to pixels via a probe; reading the computed
+    // `top` of the sticky element can return an unresolved calc() string in Safari.
+    const probe = document.createElement("div");
+    probe.setAttribute("aria-hidden", "true");
+    probe.style.cssText =
+      "position:fixed;left:0;width:0;height:0;visibility:hidden;pointer-events:none;top:var(--stick-top,0px)";
+    document.body.appendChild(probe);
+    const update = () => {
+      const mobile = !window.matchMedia("(min-width: 900px)").matches;
+      heads().forEach((head) => {
+        const card = head.closest(".project-card");
+        const stickTop = probe.getBoundingClientRect().top;
+        const rect = card.getBoundingClientRect();
+        const cs = getComputedStyle(card);
+        const contentBottom =
+          rect.bottom -
+          (parseFloat(cs.borderBottomWidth) || 0) -
+          (parseFloat(cs.paddingBottom) || 0);
+        card.style.setProperty("--card-h", `${rect.height}px`);
+        card.style.setProperty("--head-h", `${head.offsetHeight}px`);
+        card.style.setProperty(
+          "--body-h",
+          `${card.querySelector(".project-card__body")?.offsetHeight ?? 0}px`,
+        );
+        const headTop = Math.min(stickTop, contentBottom - head.offsetHeight);
+        const stuck = mobile && rect.top + 1.5 < headTop;
+        head.classList.toggle("is-stuck", stuck);
+      });
+    };
+    const schedule = update;
+    window.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("resize", schedule);
+    window.addEventListener("load", schedule);
+    update();
+  }
 
   // Mobile: tapping the pinned project header scrolls back to the top of that card.
   if (!mount.dataset.scrollTopBound) {
@@ -281,41 +220,6 @@ function renderCvPage() {
   refreshCvOverlayIfOpen();
 }
 
-function renderVikingCaseStudy() {
-  const base = getBase();
-  const locale = getLocale();
-  const project = getProjectViewModel("viking", locale);
-  if (!project) return;
-
-  const subnavMount = document.querySelector("[data-viking-subnav]");
-  if (subnavMount) {
-    subnavMount.outerHTML = renderProjectSubnav(undefined, locale);
-  }
-
-  const carouselMount = document.querySelector("[data-viking-carousel]");
-  if (carouselMount) {
-    carouselMount.innerHTML = renderCarousel(
-      project.caseStudyImages,
-      base,
-      "viking-carousel",
-      locale,
-    );
-  }
-
-  const tagsMount = document.querySelector("[data-viking-tags]");
-  if (tagsMount) tagsMount.innerHTML = renderTags(project.tags);
-
-  const storesMount = document.querySelector("[data-viking-stores]");
-  if (storesMount) {
-    storesMount.innerHTML = renderStoreBadges(project, base);
-  }
-
-  const highlightsMount = document.querySelector("[data-viking-highlights]");
-  if (highlightsMount) {
-    highlightsMount.innerHTML = renderHighlights(project.bullets);
-  }
-}
-
 function escapeHtml(text) {
   return String(text)
     .replace(/&/g, "&amp;")
@@ -327,15 +231,11 @@ function escapeHtml(text) {
 function refreshContent({ animate = false } = {}) {
   const apply = () => {
     mountLayout();
-    initMobileNav();
     initLanguageSwitch();
     renderAboutPage();
     renderProjectsPage();
     renderCvPage();
-    renderVikingCaseStudy();
     updateLocalizedUi();
-    initCarousels();
-    initProjectSubnav();
   };
 
   const main = document.querySelector(".page-main");
@@ -351,10 +251,39 @@ function refreshContent({ animate = false } = {}) {
   apply();
 }
 
+/**
+ * Keep the browser's status-bar tint in step with what is actually at the top of the screen:
+ * the header band's colour while the band is there, the page colour once it has scrolled away.
+ * (Safari does not reliably restore the tint by itself after scrolling back to the top.)
+ */
+function initChromeTint() {
+  const band = document.querySelector(".web-page-header__band");
+  if (!band) return;
+  const bandColor =
+    getComputedStyle(document.body).getPropertyValue("--color-figma-band").trim() ||
+    "#e9e9e9";
+  const pageColor = "#ffffff";
+  const metas = document.querySelectorAll('meta[name="theme-color"]');
+  let current = "";
+  const apply = () => {
+    const bandVisible = band.getBoundingClientRect().bottom > 1;
+    const color = bandVisible ? bandColor : pageColor;
+    if (color === current) return;
+    current = color;
+    document.documentElement.style.backgroundColor = color;
+    metas.forEach((m) => m.setAttribute("content", color));
+  };
+  window.addEventListener("scroll", apply, { passive: true });
+  window.addEventListener("resize", apply);
+  window.addEventListener("pageshow", apply);
+  apply();
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   setLocale(getLocale());
   initCvOverlay();
   refreshContent();
+  initChromeTint();
   requestAnimationFrame(() => {
     document.body.classList.add("is-content-ready");
   });

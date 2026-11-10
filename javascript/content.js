@@ -2,11 +2,6 @@
  * Single source of truth for site copy, images and project data.
  * Edit objects here to update UI text, icons, tags and screenshots.
  */
-import { resolveAssetPath } from "./assets.js";
-import { getLocale, pickLocalized, pickLocalizedList } from "./i18n.js";
-
-export { resolveAssetPath };
-
 export const ICONS = {
   email: "assets/icons/garden_email-fill-20.svg",
   phone: "assets/icons/iconPhone.svg",
@@ -25,10 +20,6 @@ export const SITE = {
   title: {
     sv: "Mobilapputvecklare",
     en: "Mobile app developer",
-  },
-  footer: {
-    sv: "All rights reserved.",
-    en: "All rights reserved.",
   },
   lang: {
     en: { full: "English", abbr: "En" },
@@ -71,133 +62,19 @@ export const ABOUT = {
   },
   bioHeading: { sv: "Vem är jag", en: "Who am I" },
   contactHeading: { sv: "Kontakt", en: "Contact" },
-  // `skills` and `tools` are not shown in the current About layout (photo, bio,
-  // contact). They are kept here so they can be brought back without retyping.
-  skillsHeading: {
-    sv: "Programmeringserfarenhet",
-    en: "Programming experience",
-  },
-  toolsHeading: { sv: "Verktyg", en: "Tools" },
-  skills: [
-    {
-      name: "Flutter",
-      icon: "assets/svg/programming_languages/Language=Flutter.svg",
-      level: 5,
-    },
-    {
-      name: "Java",
-      icon: "assets/svg/programming_languages/Language=Java.svg",
-      level: 4,
-    },
-    {
-      name: "Kotlin",
-      icon: "assets/svg/programming_languages/Language=Kotlin.svg",
-      level: 3,
-    },
-    {
-      name: "Swift",
-      icon: "assets/svg/programming_languages/Language=Swift.svg",
-      level: 3,
-    },
-    {
-      name: "C#",
-      icon: "assets/svg/programming_languages/Language=C#.svg",
-      level: 4,
-    },
-    {
-      name: "Python",
-      icon: "assets/svg/programming_languages/Language=Python.svg",
-      level: 2,
-    },
-    {
-      name: "React",
-      icon: "assets/svg/programming_languages/Language=React.svg",
-      level: 2,
-    },
-    {
-      name: "HTML",
-      icon: "assets/svg/programming_languages/Language=HTML.svg",
-      level: 3,
-    },
-    {
-      name: "CSS",
-      icon: "assets/svg/programming_languages/Language=CSS.svg",
-      level: 3,
-    },
-    {
-      name: "JavaScript",
-      icon: "assets/svg/programming_languages/Language=JavaScript.svg",
-      level: 2,
-    },
-  ],
-  tools: [
-    { name: "Xcode", icon: "assets/svg/tools_icons/tool=xcode.svg" },
-    {
-      name: "Apple Connect",
-      icon: "assets/svg/tools_icons/tool=appeConnect.svg",
-    },
-    {
-      name: "Google Play Console",
-      icon: "assets/svg/tools_icons/tool=googleConsole.svg",
-    },
-    {
-      name: "Android Studio",
-      icon: "assets/svg/tools_icons/tool=androidStudio.svg",
-    },
-    { name: "Firebase", icon: "assets/svg/tools_icons/tool=firebase.svg" },
-    { name: "Figma", icon: "assets/svg/tools_icons/tool=figma.svg" },
-    { name: "Azure DevOps", icon: "assets/svg/tools_icons/tool=azure.svg" },
-    { name: "Postman", icon: "assets/svg/tools_icons/tool=postman.svg" },
-    { name: "Supabase", icon: "assets/svg/tools_icons/tool=supabase.svg" },
-    { name: "Docker", icon: "assets/svg/tools_icons/tool=docker.svg" },
-    { name: "Cursor", icon: "assets/svg/tools_icons/tool=cursor.svg" },
-    { name: "Claude", icon: "assets/svg/tools_icons/tool=claude.svg" },
-    {
-      name: "Unreal Engine 5",
-      icon: "assets/svg/tools_icons/tool=unrealEnginge5.svg",
-    },
-    { name: "Unity", icon: "assets/svg/tools_icons/tool=unity.svg" },
-    { name: "Photoshop", icon: "assets/svg/tools_icons/tool=photoshop.svg" },
-  ],
 };
 
-/** UI copy (navigated pages, chrome, case study). */
+/** UI copy (page chrome and titles). */
 export const UI = {
   skipToContent: { sv: "Hoppa till innehåll", en: "Skip to content" },
   mainNavAria: { sv: "Huvudnavigering", en: "Main navigation" },
   langSwitchAria: { sv: "Språk", en: "Language" },
-  projectSubnavAria: { sv: "Projektsektioner", en: "Project sections" },
-  carouselPrev: { sv: "Föregående", en: "Previous" },
-  carouselNext: { sv: "Nästa", en: "Next" },
-  carouselSlideLabel: { sv: "Bild", en: "Image" },
-  caseStudyLink: { sv: "Case study", en: "Case study" },
   pageTitle: {
     about: { sv: "Om mig", en: "About" },
     projects: { sv: "Projekt", en: "Projects" },
     cv: { sv: "CV", en: "CV" },
-    "project-viking": { sv: "Viking Assistance", en: "Viking Assistance" },
   },
 };
-
-export const CASE_STUDY_SUBNAV = [
-  { id: "overview", label: { sv: "Översikt", en: "Overview" } },
-  { id: "contribution", label: { sv: "Mitt bidrag", en: "My contribution" } },
-  {
-    id: "challenges",
-    label: { sv: "Tekniska utmaningar", en: "Technical challenges" },
-  },
-  {
-    id: "architecture",
-    label: {
-      sv: "Arkitektur och implementation",
-      en: "Architecture & implementation",
-    },
-  },
-  {
-    id: "results",
-    label: { sv: "Resultat och lärdomar", en: "Results & learnings" },
-  },
-];
 
 export const CV = {
   areasHeading: { sv: "Tech stack", en: "Tech stack" },
@@ -343,7 +220,6 @@ export const PROJECTS = [
       ],
     },
     stores: {},
-    caseStudy: null,
   },
   {
     slug: "viking",
@@ -392,34 +268,6 @@ export const PROJECTS = [
       playStore:
         "https://play.google.com/store/apps/details?id=no.vikingredning.app",
     },
-    caseStudy: {
-      href: "projects/viking.html",
-      /** Set to `true` when the case study page is ready to link from Projects. */
-      linkVisible: false,
-      images: [
-        {
-          src: "assets/projects/viking/images/Screenshot 2026-11-04 at 12.15.02.png",
-          alt: {
-            sv: "Skärmdump Viking Assistance",
-            en: "Viking Assistance screenshot",
-          },
-        },
-        {
-          src: "assets/projects/viking/images/intercom_run_exclusive_problem.png",
-          alt: {
-            sv: "Intercom: problem före koordinering",
-            en: "Intercom: issue before coordination",
-          },
-        },
-        {
-          src: "assets/projects/viking/images/intercom_run_exclusive_result.png",
-          alt: {
-            sv: "Intercom: sekventiell kö",
-            en: "Intercom: sequential queue",
-          },
-        },
-      ],
-    },
   },
   {
     slug: "wakil",
@@ -461,7 +309,6 @@ export const PROJECTS = [
       ],
     },
     stores: {},
-    caseStudy: null,
   },
   {
     slug: "speedbox",
@@ -504,7 +351,6 @@ export const PROJECTS = [
       website: "https://www.speedbox.eu",
       websiteLabel: { sv: "Till Speedbox", en: "Go to Speedbox" },
     },
-    caseStudy: null,
   },
   {
     slug: "pigello",
@@ -521,32 +367,9 @@ export const PROJECTS = [
     },
     bullets: { sv: [], en: [] },
     stores: {},
-    caseStudy: null,
   },
 ];
 
 export function getVisibleProjects() {
   return PROJECTS.filter((p) => p.visible !== false);
-}
-
-export function getProjectBySlug(slug) {
-  return PROJECTS.find((p) => p.slug === slug) ?? null;
-}
-
-/** Normalized view model for rendering (locale applied). */
-export function getProjectViewModel(slug, locale = getLocale()) {
-  const project = getProjectBySlug(slug);
-  if (!project) return null;
-  return {
-    ...project,
-    description: pickLocalized(project.description, locale),
-    bullets: pickLocalizedList(project.bullets, locale),
-    roleType: pickLocalized(project.roleType, locale),
-    period: pickLocalized(project.period, locale),
-    caseStudyImages:
-      project.caseStudy?.images?.map((img) => ({
-        src: img.src,
-        alt: pickLocalized(img.alt, locale),
-      })) ?? [],
-  };
 }
