@@ -164,6 +164,7 @@ export function renderProjectPanel(project, base, locale = getLocale()) {
           <p class="project-card__period">${escapeHtml(pickLocalized(project.period, locale))}</p>
         </div>
       </header>
+      <div class="project-card__body">
       <p class="project-card__role">${escapeHtml(pickLocalized(project.roleType, locale))}</p>
       ${tagsHtml ? `<div class="project-card__tags">${tagsHtml}</div>` : ""}
       <div class="project-card__visual">
@@ -173,6 +174,7 @@ export function renderProjectPanel(project, base, locale = getLocale()) {
       <div class="project-card__copy">
         ${paragraphs.map((t) => `<p>${escapeHtml(t)}</p>`).join("")}
         ${bullets.length ? `<ul class="project-card__bullets">${bullets.map((b) => `<li>${escapeHtml(b)}</li>`).join("")}</ul>` : ""}
+      </div>
       </div>
     </article>`;
 }

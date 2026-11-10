@@ -105,6 +105,51 @@ function renderProjectsPage() {
   mount.innerHTML = getVisibleProjects()
     .map((p) => renderProjectPanel(p, base, locale))
     .join("");
+  // Re-measure the cards (clip variables) after every render.
+  requestAnimationFrame(() => window.dispatchEvent(new Event("resize")));
+
+  // Mobile: mark the project header that is currently pinned (styles the card edge + top cover).
+  if (!mount.dataset.stuckBound) {
+    mount.dataset.stuckBound = "true";
+    const heads = () => mount.querySelectorAll(".project-card__head");
+    // The pinned header's position is computed from the card (never read from the sticky
+    // element itself): iOS moves sticky elements on the compositor, so their measured
+    // position can lag behind what is on screen.
+    // Resolve --stick-top (a calc() with env()) to pixels via a probe; reading the computed
+    // `top` of the sticky element can return an unresolved calc() string in Safari.
+    const probe = document.createElement("div");
+    probe.setAttribute("aria-hidden", "true");
+    probe.style.cssText =
+      "position:fixed;left:0;width:0;height:0;visibility:hidden;pointer-events:none;top:var(--stick-top,0px)";
+    document.body.appendChild(probe);
+    const update = () => {
+      const mobile = !window.matchMedia("(min-width: 900px)").matches;
+      heads().forEach((head) => {
+        const card = head.closest(".project-card");
+        const stickTop = probe.getBoundingClientRect().top;
+        const rect = card.getBoundingClientRect();
+        const cs = getComputedStyle(card);
+        const contentBottom =
+          rect.bottom -
+          (parseFloat(cs.borderBottomWidth) || 0) -
+          (parseFloat(cs.paddingBottom) || 0);
+        card.style.setProperty("--card-h", `${rect.height}px`);
+        card.style.setProperty("--head-h", `${head.offsetHeight}px`);
+        card.style.setProperty(
+          "--body-h",
+          `${card.querySelector(".project-card__body")?.offsetHeight ?? 0}px`,
+        );
+        const headTop = Math.min(stickTop, contentBottom - head.offsetHeight);
+        const stuck = mobile && rect.top + 1.5 < headTop;
+        head.classList.toggle("is-stuck", stuck);
+      });
+    };
+    const schedule = update;
+    window.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("resize", schedule);
+    window.addEventListener("load", schedule);
+    update();
+  }
 
   // Mobile: tapping the pinned project header scrolls back to the top of that card.
   if (!mount.dataset.scrollTopBound) {
@@ -206,10 +251,39 @@ function refreshContent({ animate = false } = {}) {
   apply();
 }
 
+/**
+ * Keep the browser's status-bar tint in step with what is actually at the top of the screen:
+ * the header band's colour while the band is there, the page colour once it has scrolled away.
+ * (Safari does not reliably restore the tint by itself after scrolling back to the top.)
+ */
+function initChromeTint() {
+  const band = document.querySelector(".web-page-header__band");
+  if (!band) return;
+  const bandColor =
+    getComputedStyle(document.body).getPropertyValue("--color-figma-band").trim() ||
+    "#e9e9e9";
+  const pageColor = "#ffffff";
+  const metas = document.querySelectorAll('meta[name="theme-color"]');
+  let current = "";
+  const apply = () => {
+    const bandVisible = band.getBoundingClientRect().bottom > 1;
+    const color = bandVisible ? bandColor : pageColor;
+    if (color === current) return;
+    current = color;
+    document.documentElement.style.backgroundColor = color;
+    metas.forEach((m) => m.setAttribute("content", color));
+  };
+  window.addEventListener("scroll", apply, { passive: true });
+  window.addEventListener("resize", apply);
+  window.addEventListener("pageshow", apply);
+  apply();
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   setLocale(getLocale());
   initCvOverlay();
   refreshContent();
+  initChromeTint();
   requestAnimationFrame(() => {
     document.body.classList.add("is-content-ready");
   });
